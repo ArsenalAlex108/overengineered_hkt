@@ -1,0 +1,33 @@
+[package]
+name = "overengineered_hkt"
+version = "0.1.0"
+edition = "2024"
+description = "Higher-kinded types with transmutability, user-defined constraints, tuple mapping using generic functions."
+keywords = ["hkt", "transmute"]
+categories = ["rust-patterns", "data-structures"]
+repository = ""
+
+[features]
+unstable = []
+transmute = []
+
+[dependencies]
+cast_trait_object = "0.1.4"
+composing = "0.2.0"
+const-random = "0.1.18"
+derive_more = { version = "2.0.1", default-features = false, features = ["from", "into", "as_ref", "deref", "deref_mut"] }
+dyn-clone = "1.0.20"
+either = "1.15.0"
+futures = "0.3.31"
+intertrait = "0.2.2"
+naan = "0.1.32"
+negative = "0.1.2"
+negative-impl = "0.1.6"
+ref-cast = "1.0.25"
+static_assertions = "1.1.0"
+tap = "1.0.1"
+triomphe = "0.1.15"
+try-specialize = "0.1.2"
+typeid = "1.0.3"
+proc_macros = { path = "../proc_macros" }
+
