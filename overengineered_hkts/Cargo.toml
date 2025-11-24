@@ -1,5 +1,5 @@
 [package]
-name = "overengineered_hkt"
+name = "overengineered_hkts"
 version = "0.1.0"
 edition = "2024"
 description = "Expiremental crate of higher-kinded types integrated with lifetimes and matching function types and optional cloning and supporting no_std."
