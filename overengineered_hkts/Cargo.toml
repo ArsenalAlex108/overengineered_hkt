@@ -7,7 +7,7 @@ keywords = ["hkt", "transmute", "one_of", "no_std", "match"]
 categories = ["rust-patterns", "data-structures"]
 repository = "https://github.com/ArsenalAlex108/overengineered_hkt"
 license = "MIT OR Apache-2.0"
-readme = "../../README.md"
+readme = "../README.md"
 
 [features]
 unstable = []
