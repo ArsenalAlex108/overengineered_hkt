@@ -5,7 +5,8 @@ edition = "2024"
 description = "Expiremental crate of higher-kinded types integrated with lifetimes and matching function types and optional cloning and supporting no_std."
 keywords = ["hkt", "transmute", "one_of", "no_std", "match"]
 categories = ["rust-patterns", "data-structures"]
-repository = ""
+repository = "https://github.com/ArsenalAlex108/overengineered_hkt"
+license = "MIT OR Apache-2.0"
 
 [features]
 unstable = []

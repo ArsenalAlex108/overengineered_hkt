@@ -1,3 +1,4 @@
 [workspace]
 resolver = "3"
-members = ["overengineered_hkt", "proc_macros"]
+# Original: members = ["overengineered_hkt", "proc_macros"]
+members = ["overengineered_hkt"]
