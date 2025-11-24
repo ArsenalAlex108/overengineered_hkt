@@ -1,4 +1,3 @@
-use std::num::NonZeroUsize;
 
 macro_rules! impl_trait_for {
     (unsafe $trait:path => $($type:ty),+ $(,)?) => {
@@ -15,6 +14,7 @@ macro_rules! impl_trait_for {
     };
 }
 
+#[allow(unused)]
 macro_rules! impl_hkt_classification_for {
     ($choice:ty: $tinner:ident => $($type:ty),+ $(,)?) => {
         $(impl<$tinner> crate::hkt::traits::hkt_classification::HktClassification for $type {
@@ -24,6 +24,7 @@ macro_rules! impl_hkt_classification_for {
     };
 }
 
+#[allow(unused)]
 macro_rules! impl_trait_for_wrapper {
     (unsafe $trait:path : $tinner:ident => $($type:ty),+ $(,)?) => {
         $(unsafe impl<$tinner : $trait> $trait for $type {

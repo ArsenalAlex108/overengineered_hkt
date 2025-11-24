@@ -1,4 +1,4 @@
-use std::{convert::Infallible, marker::PhantomData};
+use core::{convert::Infallible, marker::PhantomData};
 
 use crate::hkt::{Hkt, HktUnsized, UnsizedHkt, UnsizedHktUnsized, hkt_classification::{self, HktClassification}, id::IdHkt};
 

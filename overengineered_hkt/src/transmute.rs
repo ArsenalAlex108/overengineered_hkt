@@ -1,6 +1,6 @@
 //! Unsafe transmute functions for shared types confirmed to be transmute-possible while avoid exposing public APIs, as well as functions for transmuting entire Hkt stacks.
 
-use std::{
+use core::{
     mem::ManuallyDrop,
 };
 
@@ -39,6 +39,7 @@ where
 /// # Safety
 /// This function is `unsafe` because undefined behavior related to lifetimes can still occur since `T` and `U` are not bounded by `'static`. If the [TypeId](std::any::TypeId) check were sufficient, any undefined behavior would have been stopped at runtime by a [panic](assert_eq). This function is only guaranteed to be safe if `T` and `U` are exactly the same type - of course including lifetimes.
 #[inline]
+#[allow(unused)]
 pub(crate) unsafe fn unsafe_transmute_id<T, U>(s: U) -> T
 where
     T: Sized,
@@ -70,12 +71,14 @@ where
     }
 }
 
+#[allow(unused)]
 /// # Safety
 ///  See [std::mem::transmute]
 pub unsafe trait Transmutable<Target: ?Sized> {}
 
 unsafe impl<T: ?Sized + TyEq<R>, R: ?Sized> Transmutable<R> for T {}
 
+#[allow(unused)]
 /// # Safety
 ///  Only safe when T: Transmutable<R> and Self::F<'a, T> has the exact same memory layout as Self::F<'a, R> and do not depend on TypeIds.
 pub unsafe trait TransmutableHkt {}
@@ -98,9 +101,10 @@ pub fn transmute_hkt<'a, 't, A: Transmutable<B>, B, F: TransmutableHkt + Hkt<'t>
     unsafe { transmute_unchecked(a) }
 }
 
+#[allow(unused)]
 /// # Safety
 ///  Same as [std::mem::transmute]
-pub unsafe fn unsafe_transmute_hkt<'a, 't, A, B, F: TransmutableHkt + Hkt<'t>>(a: F::F<'a, A>) -> F::F<'a, B> {
+pub(crate) unsafe fn unsafe_transmute_hkt<'a, 't, A, B, F: TransmutableHkt + Hkt<'t>>(a: F::F<'a, A>) -> F::F<'a, B> {
     assert!(size_of::<A>() == size_of::<B>());
     assert!(align_of::<A>() == align_of::<B>());
 
@@ -109,7 +113,8 @@ pub unsafe fn unsafe_transmute_hkt<'a, 't, A, B, F: TransmutableHkt + Hkt<'t>>(a
 
 use crate::hkt::{Hkt, HktUnsized};
 
-pub fn transmute_hkt_unsized<
+#[allow(unused)]
+pub(crate) fn transmute_hkt_unsized<
     'a, 't,
     A: ?Sized + Transmutable<B>,
     B: ?Sized,

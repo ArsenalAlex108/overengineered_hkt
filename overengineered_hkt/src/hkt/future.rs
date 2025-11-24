@@ -1,4 +1,4 @@
-use std::{convert::Infallible, future::ready, marker::PhantomData, pin::Pin};
+use core::{convert::Infallible, future::ready, marker::PhantomData, pin::Pin};
 
 use futures::FutureExt;
 use tap::Pipe;
@@ -157,8 +157,8 @@ impl<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>> Mona
     for PinBoxFutureT<IdHkt>
 {
     fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
+        _clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        _clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         fa: Self::F<'a, A>,
         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
     ) -> Self::F<'a, B>

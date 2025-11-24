@@ -73,7 +73,7 @@ pub fn generate_one_of(count: TokenStream) -> TokenStream {
         format!("\n| OneOf{count}::T{i}(t)")
     });
 
-    let repeat_clone = generate.generate_string(|_|"|f| f.clone(),\n".to_string());
+    // let repeat_clone = generate.generate_string(|_|"|f| f.clone(),\n".to_string());
 
     buffer.push_str(
         &format!("
@@ -336,7 +336,7 @@ pub fn repeat_expr(input: TokenStream) -> TokenStream {
 
         let generate = Generate { count };
 
-        let mut buffer = generate.generate_string(|_| token_stream.clone().to_string() + ",\n");
+        let buffer = generate.generate_string(|_| token_stream.clone().to_string() + ",\n");
 
         TokenStream::from_str(&buffer).unwrap()
     } else {

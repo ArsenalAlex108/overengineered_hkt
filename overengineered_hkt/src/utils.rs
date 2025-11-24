@@ -7,20 +7,24 @@ where
     |a| g(f(a))
 }
 
+#[allow(unused)]
 pub(crate) fn placehold() -> ! {
     unimplemented!()
 }
 
+#[allow(unused)]
 pub(crate) trait IntoFnOnce<A> {
     type Ret;
     fn into_fn(self) -> impl FnOnce(A) -> Self::Ret;
 }
 
+#[allow(unused)]
 pub(crate) trait AsFnMut<A> {
     type Ret;
     fn as_mut_fn(&mut self) -> impl FnMut(A) -> Self::Ret;
 }
 
+#[allow(unused)]
 pub(crate) trait AsFn<A> {
     type Ret;
     fn as_fn(&self) -> impl Fn(A) -> Self::Ret;

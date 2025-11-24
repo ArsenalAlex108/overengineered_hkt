@@ -1,4 +1,4 @@
-use std::{convert::Infallible, ops::Add};
+use core::{convert::Infallible, ops::Add};
 
 use tap::Pipe as _;
 
@@ -202,8 +202,8 @@ impl<
 > Monad<'t, ReqIn, ReqOut, ReqF1> for ResultT<E>
 {
     fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
+        _clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        _clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         fa: Self::F<'a, A>,
         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
     ) -> Self::F<'a, B>

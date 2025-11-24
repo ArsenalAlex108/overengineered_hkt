@@ -1,4 +1,4 @@
-use std::{
+use core::{
     convert::{Infallible, identity},
     marker::PhantomData,
 };
@@ -7,7 +7,7 @@ use tap::Pipe;
 
 use crate::{
     hkt::{
-        Applicative, CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, IntoConverged, Monad, Pure, Rfoldable, TCloneableOf5, Traversable, UnsizedHkt, UnsizedHktUnsized, boxed::BoxT, hkt_classification::{self, HktClassification}, id::IdHkt, one_of::NotT5of5
+        Applicative, CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, IntoConverged, Monad, Pure, Rfoldable, TCloneableOf5, Traversable, hkt_classification::{self, HktClassification}, id::IdHkt, one_of::NotT5of5
     },
     marker_classification::{AssertBlankOutput, ConstBool, TypeGuard},
     utils::CloneWrapper,
@@ -85,7 +85,7 @@ impl<
         clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
-        mut fb: Self::F<'a, A>,
+        fb: Self::F<'a, A>,
     ) -> FoldWhile<B>
     where
         A: 'a,
@@ -126,7 +126,7 @@ impl<
         clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
-        mut fb: Self::F<'a, A>,
+        fb: Self::F<'a, A>,
     ) -> FoldWhile<B>
     where
         A: 'a,
@@ -280,7 +280,7 @@ impl<
         // let f_clone = CloneWrapper(f, |f: &_| ReqF1::clone_one_of_5(f));
 
         // So some runtime overhead
-        let f_clone = std::rc::Rc::new(f);
+        let f_clone = alloc::rc::Rc::new(f);
         
         let f_tag = CloneWrapper(f_tag, |f: &_| ReqF1::clone_one_of_5(f));
 
@@ -302,7 +302,9 @@ impl<
             );
 
             let f_tag = f_tag.clone();
-            let sum = TInner::fold_while(
+            
+
+            TInner::fold_while(
                 {
                     let clone_b = clone_b.clone();
                     move |vb: &Vec<<TInner as Hkt<'t>>::F<'a, B>>| {
@@ -377,9 +379,7 @@ impl<
                 Vec::with_capacity(TInner::size_hint(&nested).0.saturating_add(1)),
                 nested,
             )
-            .into_converged();
-
-            sum
+            .into_converged()
             // Don't flatten - flat_map reduce instead
             // sum.into_iter().flat_map({
             //     let f_clone2 = f_clone.clone();

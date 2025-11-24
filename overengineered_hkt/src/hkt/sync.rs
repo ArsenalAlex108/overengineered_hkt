@@ -1,8 +1,10 @@
-use std::{
+use core::{
     convert::Infallible,
     marker::PhantomData,
-    sync::{Arc, Mutex},
 };
+
+use alloc::sync::Arc;
+use std::sync::Mutex;
 
 use crate::hkt::{
     DerefHkt, Hkt, HktUnsized, UnsizedHkt, UnsizedHktUnsized,

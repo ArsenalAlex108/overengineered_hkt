@@ -1,12 +1,9 @@
-use std::convert::Infallible;
+use core::convert::Infallible;
 
-use tap::Pipe;
 
-use crate::hkt::CloneFnHkt;
 use crate::hkt::CloneOwnedK;
 use crate::hkt::CovariantK;
 use crate::hkt::CovariantRefK;
-use crate::hkt::Marker;
 use crate::hkt::Rfoldable;
 use crate::hkt::UnsizedHkt;
 use crate::hkt::UnsizedHktUnsized;
@@ -70,8 +67,8 @@ impl<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>
     Functor<'t, ReqIn, ReqOut, ReqF1> for IdHkt
 {
     fn map<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
+        _clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        _clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         fa: Self::F<'a, A>,
     ) -> Self::F<'a, B>
@@ -102,8 +99,8 @@ impl<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>
     Foldable<'t, ReqIn, ReqOut, ReqF1> for IdHkt
 {
     fn fold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-        clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
+        _clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        _clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
         fb: Self::F<'a, A>,
@@ -128,8 +125,8 @@ impl<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>
     Rfoldable<'t, ReqIn, ReqOut, ReqF1> for IdHkt
 {
     fn rfold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-        clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
+        _clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        _clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
         fb: Self::F<'a, A>,
@@ -151,7 +148,7 @@ impl<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>
 }
 
 impl<'t, ReqIn: TypeGuard<'t>> Pure<'t, ReqIn> for IdHkt {
-    fn pure<'a, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, a: A) -> Self::F<'a, A>
+    fn pure<'a, A>(_clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, a: A) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a,
@@ -164,8 +161,8 @@ impl<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>
     Applicative<'t, ReqIn, ReqOut, ReqF1> for IdHkt
 {
     fn apply<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
+        _clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        _clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         ff: Self::F<'a, <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>>,
         fa: Self::F<'a, A>,
     ) -> Self::F<'a, B>
@@ -187,8 +184,8 @@ impl<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>
     Monad<'t, ReqIn, ReqOut, ReqF1> for IdHkt
 {
     fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
+        _clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        _clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         fa: Self::F<'a, A>,
         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
     ) -> Self::F<'a, B>
@@ -210,8 +207,8 @@ impl<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>
     Traversable<'t, ReqIn, ReqOut, ReqF1> for IdHkt
 {
     fn traverse<'a, A, B, F, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
+        _clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        _clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         fa: Self::F<'a, A>,
     ) -> F::F<'a, Self::F<'a, B>>
@@ -239,7 +236,7 @@ impl<'t> CloneOwnedK<'t, ConstBool<true>> for IdHkt {
         A: 'a + 'b,
         't: 'a + 'b,
     {
-        clone_a(&a)
+        clone_a(a)
     }
 }
 
@@ -252,7 +249,7 @@ impl<'t> CloneK<'t, ConstBool<true>> for IdHkt {
         A: 'a,
         't: 'a,
     {
-        clone_a(&a)
+        clone_a(a)
     }
 }
 

@@ -1,10 +1,10 @@
-use std::{convert::Infallible, marker::PhantomData};
+use core::{convert::Infallible, marker::PhantomData};
 
 use tap::Pipe as _;
 
 use crate::{
     hkt::{
-        CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, PureMapInner, Rfoldable, TCloneableOf5, UnsizedHkt, UnsizedHktUnsized, id::IdHkt, nullary::NullaryHkt, one_of::{NotT1of5, NotT2of5, NotT3of5, NotT5of5, OneOf5Hkt, T4Of5Hkt, T5Of5Hkt}
+        CloneK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, Rfoldable, TCloneableOf5, UnsizedHkt, UnsizedHktUnsized, one_of::{NotT5of5, OneOf5Hkt, T5Of5Hkt}
     },
     marker_classification::{AssertBlankOutput, ConstBool, TypeGuard},
     utils::CloneWrapper,

@@ -1,25 +1,21 @@
-use std::convert::identity;
-use std::ops::Deref as _;
-use std::{convert::Infallible, marker::PhantomData};
+use core::ops::Deref as _;
+use core::{convert::Infallible, marker::PhantomData};
 
-use dyn_clone::clone;
 use tap::Pipe as _;
 
 use crate::hkt::bind::BindT;
 use crate::hkt::hkt_classification::{self, HktClassification};
-use crate::hkt::nullary::NullaryHkt;
 use crate::hkt::one_of::OneOf5Hkt;
 use crate::hkt::reference::RefT;
 use crate::hkt::{
-    Applicative, CloneFnHkt, CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Monad,
-    Pure, PureMapInner, Rfoldable, Traversable, UnsizedHkt, UnsizedHktUnsized,
+    Applicative, CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Monad,
+    Pure, Rfoldable, Traversable, UnsizedHkt, UnsizedHktUnsized,
 };
 use crate::marker_classification::{ConstBool, TypeGuard, TyEq};
 use crate::{
     hkt::{Hkt, HktUnsized, id::IdHkt},
 };
 
-use super::Marker;
 
 pub struct BoxT<TInner = IdHkt>(Infallible, PhantomData<TInner>);
 
@@ -274,7 +270,7 @@ impl<
         <F as Functor<'t, ReqIn, ReqIn, ReqF1>>::map(
             move |tb| TInner::clone(clone_b.clone(), tb).pipe(ReqIn::into_guarded),
             move |tb| {
-                TInner::clone(clone_b2.clone(), &*tb)
+                TInner::clone(clone_b2.clone(), tb)
                     .pipe(Box::new)
                     .pipe(ReqIn::into_guarded)
             },

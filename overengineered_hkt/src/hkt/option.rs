@@ -1,4 +1,4 @@
-use std::{convert::Infallible, marker::PhantomData};
+use core::{convert::Infallible, marker::PhantomData};
 
 use tap::Pipe as _;
 
@@ -304,7 +304,7 @@ impl<
         F: Applicative<'t, ReqIn, ReqOut, ReqF1> + Functor<'t, ReqIn, ConstBool<false>, ReqF1>,
         't: 'a,
     {
-        let f_map = ReqF1::create_from(&f, |i| Some(i));
+        let f_map = ReqF1::create_from(&f, Some);
 
         match fa {
             Some(ta) => {

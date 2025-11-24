@@ -1,4 +1,4 @@
-use std::{
+use core::{
     convert::Infallible,
     fmt::Debug,
     panic::{RefUnwindSafe, UnwindSafe},
@@ -9,7 +9,7 @@ use crate::{hkt::{
 }, transmute};
 
 mod sealed {
-    use std::convert::Infallible;
+    use core::convert::Infallible;
 
     /// Sealed base trait
     pub trait BaseSealed {}
@@ -51,6 +51,7 @@ pub trait TyEq<T: ?Sized>: sealed::TyEqSealed<T = T> {
 
 impl<T: ?Sized> TyEq<T> for T {}
 
+#[allow(unused)]
 /// Implemented by [`ConstBool<true>`](ConstBool) and [`ConstBool<false>`](ConstBool)
 pub(crate) trait IsConstBool: sealed::BaseSealed {
     const BOOL: bool;
@@ -72,7 +73,8 @@ impl<const VAL: bool> IsConstBool for ConstBool<VAL> {
     const BOOL: bool = VAL;
 }
 
-pub trait IsSend<Bool: IsConstBool> {
+#[allow(unused)]
+pub(crate) trait IsSend<Bool: IsConstBool> {
     type Sealed: sealed::AssociatedSealed;
 }
 
@@ -87,7 +89,8 @@ impl<T: Send> IsSend<ConstBool<true>> for T {
     type Sealed = sealed::AssociatedKey;
 }
 
-pub trait IsSync<Bool: IsConstBool> {
+#[allow(unused)]
+pub(crate) trait IsSync<Bool: IsConstBool> {
     type Sealed: sealed::AssociatedSealed;
 }
 
@@ -106,6 +109,7 @@ impl<T: Sync> IsSync<ConstBool<true>> for T {
 //         Self: Sized;
 // }
 
+#[allow(unused)]
 /// (Unused) Higher-kinded version of [TypeGuard]
 pub(crate) trait TypeGuardK: sealed::BaseSealed {
     type OutputF<'t>: Hkt<'t>;
@@ -246,6 +250,7 @@ impl<'t> TypeGuard<'t> for ConstBool<true> {
 //     }
 // }
 
+#[allow(unused)]
 #[deprecated = "Unused"]
 pub(crate) trait IsUnpin<Bool: IsConstBool> {
     type Sealed: sealed::AssociatedSealed;
@@ -258,6 +263,7 @@ impl<T: Unpin> IsUnpin<ConstBool<true>> for T {
     type Sealed = sealed::AssociatedKey;
 }
 
+#[allow(unused)]
 #[deprecated = "Unused"]
 pub(crate) trait IsUnwindSafe<Bool: IsConstBool> {
     type Sealed: sealed::AssociatedSealed;
@@ -270,6 +276,7 @@ impl<T: UnwindSafe> IsUnwindSafe<ConstBool<true>> for T {
     type Sealed = sealed::AssociatedKey;
 }
 
+#[allow(unused)]
 #[deprecated = "Unused"]
 pub(crate) trait IsRefUnwindSafe<Bool: IsConstBool> {
     type Sealed: sealed::AssociatedSealed;
@@ -396,10 +403,12 @@ impl<'t, K: Hkt<'t>> Hkt<'t> for RequireNone<K> {
         't: 'a;
 }
 
+#[allow(unused)]
 #[repr(transparent)]
 #[derive(Debug, Clone, derive_more::Deref, derive_more::DerefMut)]
 pub(crate) struct UnsafeAuto<T>(T);
 
+#[allow(unused)]
 impl<T> UnsafeAuto<T> {
     pub(crate) unsafe fn assert_all_safe(t: T) -> Self {
         Self(t)

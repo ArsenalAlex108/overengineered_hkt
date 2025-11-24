@@ -1,11 +1,12 @@
-use std::{
+use core::{
     convert::Infallible,
     fmt::Debug,
     marker::PhantomData,
     ops::ControlFlow,
     panic::{RefUnwindSafe, UnwindSafe},
-    sync::Arc,
 };
+
+use alloc::sync::Arc;
 
 use dyn_clone::DynClone;
 use tap::Pipe as _;
@@ -18,23 +19,21 @@ use crate::{
         one_of::{NotT1of5, NotT2of5, NotT3of5, OneOf5Hkt},
     },
     marker_classification::{AssertBlankOutput, ConstBool, TypeGuard, TyEq},
-    transmute::unsafe_transmute_id,
-    utils::CloneWrapper,
 };
 
 /// Alias for all auto traits
 pub trait Marker: Send + Sync + Unpin + UnwindSafe + RefUnwindSafe {}
 
-impl<'t, T: Send + Sync + Unpin + UnwindSafe + RefUnwindSafe> Marker for T {}
+impl<T: Send + Sync + Unpin + UnwindSafe + RefUnwindSafe> Marker for T {}
 
 #[derive(Debug, Clone, Copy)]
 pub struct PhantomMarker<T>(PhantomData<T>);
 
-unsafe impl<'t, T> Send for PhantomMarker<T> {}
-unsafe impl<'t, T> Sync for PhantomMarker<T> {}
-impl<'t, T> Unpin for PhantomMarker<T> {}
-impl<'t, T> UnwindSafe for PhantomMarker<T> {}
-impl<'t, T> RefUnwindSafe for PhantomMarker<T> {}
+unsafe impl<T> Send for PhantomMarker<T> {}
+unsafe impl<T> Sync for PhantomMarker<T> {}
+impl<T> Unpin for PhantomMarker<T> {}
+impl<T> UnwindSafe for PhantomMarker<T> {}
+impl<T> RefUnwindSafe for PhantomMarker<T> {}
 
 // fn coerce_rc<'a>(a: &mut std::rc::Rc<&'a str>, x: std::rc::Rc<&'static str>) -> std::rc::Rc<&'a str> {
 //    *a = x;
@@ -249,206 +248,6 @@ impl<T> IntoConverged for Result<T, T> {
     }
 }
 
-// pub trait FromFnOnceBetaHkt<'t>: FnTypeHkt<'t> {
-//     fn eq_fn_mut<'a, TFnOnce, TFnMut, TFn, TFnClone>(
-//         s: Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>,
-//     ) -> Self::FnTypeEnum<'a, TFnMut, TFnMut, TFn, TFnClone>;
-
-//     fn eq_fn<'a, TFnOnce, TFnMut, TFn, TFnClone>(
-//         s: Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>,
-//     ) -> Self::FnTypeEnum<'a, TFn, TFn, TFn, TFnClone>;
-
-//     fn eq_fn_clone<'a, TFnOnce, TFnMut, TFn, TFnClone>(
-//         s: Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>,
-//     ) -> Self::FnTypeEnum<'a, TFnClone, TFnClone, TFnClone, TFnClone>;
-
-//     fn from_fn_once<'a, TFnOnce, TFnMut, TFn, TFnClone>(
-//         f: TFnOnce,
-//     ) -> Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>;
-
-//     fn from_fn_mut<'a, TFnOnce, TFnMut, TFn, TFnClone>(
-//         f: TFnMut,
-//     ) -> Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>;
-
-//     fn from_fn<'a, TFnOnce, TFnMut, TFn, TFnClone>(
-//         f: TFn,
-//     ) -> Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>;
-
-//     fn from_fn_clone<'a, TFnOnce, TFnMut, TFn, TFnClone>(
-//         f: TFnClone,
-//     ) -> Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>;
-
-//     fn into_fn_once<'a, TFnOnce, TFnMut, TFn, TFnClone>(
-//         s: Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>,
-//     ) -> TFnOnce;
-
-//     fn into_fn_mut<'a, TFnMut, TFn, TFnClone>(
-//         s: Self::FnTypeEnum<'a, TFnMut, TFnMut, TFn, TFnClone>,
-//     ) -> TFnMut;
-
-//     fn into_fn<'a, TFn, TFnClone>(s: Self::FnTypeEnum<'a, TFn, TFn, TFn, TFnClone>) -> TFn;
-
-//     fn into_fn_clone<'a, TFnClone>(
-//         s: Self::FnTypeEnum<'a, TFnClone, TFnClone, TFnClone, TFnClone>,
-//     ) -> TFnClone;
-// }
-
-// pub trait IntoFnOnceHkt<'t>: FnTypeHkt<'t> {
-//     fn into_fn_once<'a, X, O>(s: Self::FnTypeEnum<'a, X, O, O, O>) -> X
-//     where
-//         X: 'a,
-//         O: 'a,
-//         't: 'a;
-// }
-
-// pub trait AnyIntoFnOnceHkt<'t>: FnTypeHkt<'t> {
-//     fn any_into_fn_once<'a, A, B, C, D>(s: Self::FnTypeEnum<'a, A, B, C, D>) -> A
-//     where
-//         A: 'a,
-//         B: 'a,
-//         C: 'a,
-//         D: 'a,
-//         't: 'a;
-// }
-
-// pub trait FromFnOnceHkt<'t>: FromFnMutHkt<'t> {
-//     fn from_fn_once<'a, X, O>(f: X) -> Self::FnTypeEnum<'a, X, O, O, O>
-//     where
-//         X: 'a,
-//         O: 'a,
-//         't: 'a;
-// }
-
-// pub trait IntoFnMutHkt<'t>: IntoFnOnceHkt<'t> {
-//     fn into_fn_mut<'a, X, O>(s: Self::FnTypeEnum<'a, X, X, O, O>) -> X
-//     where
-//         X: 'a,
-//         O: 'a,
-//         't: 'a;
-// }
-
-// pub trait FromFnMutHkt<'t>: FromFnHkt<'t> {
-//     fn from_fn_mut<'a, X, O>(f: X) -> Self::FnTypeEnum<'a, X, X, O, O>
-//     where
-//         X: 'a,
-//         O: 'a,
-//         't: 'a;
-// }
-
-// pub trait IntoFnHkt<'t>: IntoFnMutHkt<'t> {
-//     fn into_fn<'a, X, O>(s: Self::FnTypeEnum<'a, X, X, X, O>) -> X
-//     where
-//         X: 'a,
-//         O: 'a,
-//         't: 'a;
-// }
-
-// pub trait FromFnHkt<'t>: FromFnCloneHkt<'t> {
-//     fn from_fn<'a, X, O>(f: X) -> Self::FnTypeEnum<'a, X, X, X, O>
-//     where
-//         X: 'a,
-//         O: 'a,
-//         't: 'a;
-// }
-
-// pub trait IntoFnCloneHkt<'t>: IntoFnHkt<'t> {
-//     fn into_fn_clone<'a, X>(s: Self::FnTypeEnum<'a, X, X, X, X>) -> X
-//     where
-//         X: 'a,
-//         't: 'a;
-// }
-
-// pub trait FromFnCloneHkt<'t>: FnTypeHkt<'t> {
-//     fn from_fn_clone<'a, X>(f: X) -> Self::FnTypeEnum<'a, X, X, X, X>
-//     where
-//         X: 'a,
-//         't: 'a;
-// }
-
-// // pub trait IntoFnOnceHkt<'t>: FnTypeHkt<'t> {
-// //     fn into_fn_once<'a, TFnOnce, TFnMut, TFn, TFnClone>(s: Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>) -> TFnOnce;
-// // }
-
-// // pub trait FromFnOnceHkt<'t>: FromFnMutHkt<'t> {
-// //     fn from_fn_once<'a, TFnOnce, TFnMut, TFn, TFnClone>(f: TFnOnce) -> Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>;
-// // }
-
-// // pub trait IntoFnMutHkt<'t>: IntoFnOnceHkt<'t> {
-// //     fn into_fn_mut<'a, TFnMut, TFn, TFnClone>(s: Self::FnTypeEnum<'a, TFnMut, TFnMut, TFn, TFnClone>) -> TFnMut;
-// // }
-
-// // pub trait FromFnMutHkt<'t>: FromFnHkt<'t> {
-// //     fn from_fn_mut<'a, TFnOnce, TFnMut, TFn, TFnClone>(f: TFnMut) -> Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>;
-// // }
-
-// // pub trait IntoFnHkt<'t>: IntoFnMutHkt<'t> {
-// //     fn into_fn<'a, TFn, TFnClone>(s: Self::FnTypeEnum<'a, TFn, TFn, TFn, TFnClone>) -> TFn;
-// // }
-
-// // pub trait FromFnHkt<'t>: FromFnCloneHkt<'t> {
-// //     fn from_fn<'a, TFnOnce, TFnMut, TFn, TFnClone>(f: TFn) -> Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>;
-// // }
-
-// // pub trait IntoFnCloneHkt<'t>: IntoFnHkt<'t> {
-// //     fn into_fn_clone<'a, TFnClone>(s: Self::FnTypeEnum<'a, TFnClone, TFnClone, TFnClone, TFnClone>) -> TFnClone;
-// // }
-
-// // pub trait FromFnCloneHkt<'t>: FnTypeHkt<'t> {
-// //     fn from_fn_clone<'a, TFnOnce, TFnMut, TFn, TFnClone>(f: TFnClone) -> Self::FnTypeEnum<'a, TFnOnce, TFnMut, TFn, TFnClone>;
-// // }
-
-/// FnPtr is base and FnOnce is at bottom
-/// Want TInner to be transitive - don't want a type receiving FnOnce to not be able to have FnMut or Fn as TInner
-/// DIfferentiate between what the hkt can handle and what the actual plugged type is. We can write code as if it was strict but if the input was looser then TInner will loosen in return as well.
-/// Looks like all branches have to be matched - otherwise no way to convince compiler that FnOnce can be FnMut
-#[deprecated = "Temp"]
-mod s {
-
-    pub trait IntoFnOnce<TFnOnce, TFnMut, TFn, TFnClone> {
-        fn into_fn_once(self) -> TFnOnce;
-    }
-
-    pub trait FromFnOnce<TFnOnce, TFnMut, TFn, TFnClone>:
-        FromFnMut<TFnOnce, TFnMut, TFn, TFnClone>
-    {
-        fn from_fn_once(f: TFnOnce) -> Self;
-    }
-
-    pub trait IntoFnMut<TFnOnce, TFnMut, TFn, TFnClone>:
-        IntoFnOnce<TFnOnce, TFnMut, TFn, TFnClone>
-    {
-        fn into_fn_mut(self) -> TFnMut;
-    }
-
-    pub trait FromFnMut<TFnOnce, TFnMut, TFn, TFnClone>:
-        FromFn<TFnOnce, TFnMut, TFn, TFnClone>
-    {
-        fn from_fn_mut(f: TFnMut) -> Self;
-    }
-
-    pub trait IntoFn<TFnOnce, TFnMut, TFn, TFnClone>:
-        IntoFnMut<TFnOnce, TFnMut, TFn, TFnClone>
-    {
-        fn into_fn(self) -> TFn;
-    }
-
-    pub trait FromFn<TFnOnce, TFnMut, TFn, TFnClone>:
-        FromFnClone<TFnOnce, TFnMut, TFn, TFnClone>
-    {
-        fn from_fn(f: TFn) -> Self;
-    }
-
-    pub trait IntoFnClone<TFnOnce, TFnMut, TFn, TFnClone>:
-        IntoFn<TFnOnce, TFnMut, TFn, TFnClone>
-    {
-        fn into_fn_clone(self) -> TFnClone;
-    }
-
-    pub trait FromFnClone<TFnOnce, TFnMut, TFn, TFnClone> {
-        fn from_fn_clone(f: TFnClone) -> Self;
-    }
-}
-
 // Variance:
 // Hkt: A <|- B
 // ReqIn: bound of the stack is the sum(?) of bounds of the whole TBD
@@ -530,30 +329,6 @@ pub trait Functor<
 //     (a, None)
 // }
 
-// Ok - working exampl
-fn may_clone<'a, 't, CloneA: TypeGuard<'t>, A: 'a>(
-    a: A,
-    a_fn: impl Fn(&A) -> CloneA::Output<'a, A> + Copy,
-) -> (A, Option<A>)
-where
-    't: 'a,
-{
-    match CloneA::match_guard(a_fn(&a)) {
-        Ok(a2) => {
-            let _ = may_clone::<ConstBool<true>, A>(
-                CloneA::match_guard(a_fn(&a)).ok().expect("Guaranteed to be Ok here"),
-                |ra| {
-                    CloneA::match_guard(a_fn.clone()(ra))
-                        .ok()
-                        .expect("Ok here too")
-                },
-            );
-            (a, Some(a2))
-        }
-        Err(_) => (a, None),
-    }
-}
-
 /// `F1` usually needs cloning.
 pub trait Cofunctor<
     't,
@@ -581,7 +356,7 @@ pub trait Cofunctor<
 
 /// TODO: Need traits for transformer, transmutation is a necessity.
 pub mod hkt_classification {
-    use std::convert::Infallible;
+    use core::convert::Infallible;
 
     mod sealed {
         pub trait HktClassificationType {}
@@ -686,7 +461,7 @@ pub trait Foldable<
         't: 'a + 'e,
     {
         let tag = ReqF1::create_from(&tag, |sum: &'e mut E, a: A| {
-            sum.extend(std::iter::once(a));
+            sum.extend(core::iter::once(a));
             FoldWhile::Continue(sum)
         });
 
@@ -790,6 +565,7 @@ pub trait Monad<
         't: 'a;
 }
 
+#[allow(unused)]
 /// TODO
 pub(crate) trait MonadT<
     't,
@@ -832,6 +608,7 @@ pub trait Traversable<
 }
 
 /// TODO
+#[allow(unused)]
 pub(crate) trait SemigroupK<'t>: Hkt<'t> {
     fn combine<'a, A: 'a>(a: Self::F<'a, A>, b: Self::F<'a, A>) -> Self::F<'a, A>
     where
@@ -848,6 +625,7 @@ pub(crate) trait SemigroupK<'t>: Hkt<'t> {
 // /// TODO
 // pub(crate) trait AlternativeK<'t>: ChoiceK<'t> + MonoidK<'t> {}
 
+#[allow(unused)]
 /// TODO
 pub(crate) trait DefaultK<'t>: Hkt<'t> {
     fn default<'a, A: 'a>() -> Self::F<'a, A>
@@ -855,6 +633,7 @@ pub(crate) trait DefaultK<'t>: Hkt<'t> {
         't: 'a;
 }
 
+#[allow(unused)]
 /// TODO
 pub(crate) trait MonoidK<'t>: SemigroupK<'t> + DefaultK<'t> {}
 
@@ -933,6 +712,7 @@ pub trait CloneOwnedK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output: TypeG
         't: 'a + 'b;
 }
 
+#[allow(unused)]
 #[cfg(not(feature = "unstable"))]
 /// Similar to [CloneK] but can be set to arbitrary new lifetime
 pub(crate) trait CloneOwnedK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output: TypeGuard<'t> = ConstBool<true>>: Hkt<'t> {
@@ -978,6 +758,7 @@ impl<'t, T: NotT1of5<'t> + NotT2of5<'t> + NotT3of5<'t>> TCloneableOf5<'t> for T 
 
 
 #[deprecated = "Unused"]
+#[allow(unused)]
 pub(crate) trait PureMapInner<'t, ReqIn: Hkt<'t> = NullaryHkt, F: Hkt<'t> = IdHkt>: Hkt<'t> {
     fn pure_map_inner<'a, A>(
         in_requirement: ReqIn::F<'a, A>,
@@ -1000,6 +781,7 @@ pub trait CovariantK<'t>: Hkt<'t> {
 }
 
 #[deprecated = "Unused"]
+#[allow(unused)]
 pub(crate) trait CovariantRefK<'t>: CovariantK<'t> {
     fn covariant_ref_cast<'r, 'a, 'b, A: 'a>(a: &'r Self::F<'a, A>) -> &'r Self::F<'b, A>
     where
@@ -1008,6 +790,7 @@ pub(crate) trait CovariantRefK<'t>: CovariantK<'t> {
 }
 
 #[deprecated = "Unused"]
+#[allow(unused)]
 pub(crate) trait CloneFnHkt<'t>: Hkt<'t> {
     fn call_clone<'a, A: 'a>(f: &Self::F<'a, A>, a: &A) -> A
     where
@@ -1015,6 +798,7 @@ pub(crate) trait CloneFnHkt<'t>: Hkt<'t> {
 }
 
 #[deprecated = "Unused"]
+#[allow(unused)]
 pub(crate) struct ClonePtrHkt(Infallible);
 
 impl<'t> Hkt<'t> for ClonePtrHkt {
@@ -1029,7 +813,7 @@ impl HktClassification for ClonePtrHkt {
 }
 
 impl<'t, ReqIn: TypeGuard<'t>> CloneK<'t, ReqIn> for ClonePtrHkt {
-    fn clone<'a, A>(clone_a: impl Fn(&A) -> <ReqIn>::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
+    fn clone<'a, A>(_clone_a: impl Fn(&A) -> <ReqIn>::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a {
@@ -1064,7 +848,7 @@ impl HktClassification for DynCloneFnHkt {
 }
 
 impl<'t, ReqIn: TypeGuard<'t>> CloneK<'t, ReqIn> for DynCloneFnHkt {
-    fn clone<'a, A>(clone_a: impl Fn(&A) -> <ReqIn>::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
+    fn clone<'a, A>(_clone_a: impl Fn(&A) -> <ReqIn>::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a {
@@ -1107,9 +891,11 @@ impl<'t> CloneFnHkt<'t> for DynCloneFnHkt {
     }
 }
 
+#[allow(unused)]
 /// Example type
 pub(crate) struct CowT<K = IdHkt>(Infallible, PhantomData<K>);
 
+#[allow(unused)]
 pub(crate) enum Borrown<'a, T> {
     Borrow(&'a T),
     Own(T),
@@ -1139,6 +925,7 @@ impl<K> HktClassification for CowT<K> {
 //     }
 // }
 
+#[allow(unused)]
 pub(crate) trait IntoIteratorHkt<'t>: Hkt<'t> {
     fn into_iter<'a, A: 'a>(iter: Self::F<'a, A>) -> impl Iterator<Item = A>;
 }

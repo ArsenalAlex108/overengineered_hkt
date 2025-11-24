@@ -1,4 +1,4 @@
-use std::convert::Infallible;
+use core::convert::Infallible;
 
 use crate::{hkt::{
     CloneK, CloneOwnedK, CovariantK, Functor, Hkt, PhantomMarker, UnsizedHkt, UnsizedHktUnsized,
@@ -38,9 +38,9 @@ impl<'t, T: 't, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t
     Functor<'t, ReqIn, ReqOut, ReqF1> for NullaryHkt<T>
 {
     fn map<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
-        f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
+        _clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        _clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
+        _f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         fa: Self::F<'a, A>,
     ) -> Self::F<'a, B>
     where
@@ -67,7 +67,7 @@ impl<'t, T: 't, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t
 // }
 
 impl<'t, T: 't + Clone, ReqIn: TypeGuard<'t>> CloneK<'t, ReqIn> for NullaryHkt<T> {
-    fn clone<'a, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
+    fn clone<'a, A>(_clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a,
@@ -77,7 +77,7 @@ impl<'t, T: 't + Clone, ReqIn: TypeGuard<'t>> CloneK<'t, ReqIn> for NullaryHkt<T
 }
 
 impl<'t, T: 't + Clone, ReqIn: TypeGuard<'t>> CloneOwnedK<'t, ReqIn> for NullaryHkt<T> {
-    fn clone_owned<'a, 'b, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'b, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'b, A>
+    fn clone_owned<'a, 'b, A>(_clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'b, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'b, A>
     where
         A: 'a + 'b,
         't: 'a + 'b,
