@@ -1,5 +1,6 @@
 use core::{convert::Infallible, future::ready, marker::PhantomData, pin::Pin};
 
+use alloc::boxed::Box;
 use futures::FutureExt;
 use tap::Pipe;
 

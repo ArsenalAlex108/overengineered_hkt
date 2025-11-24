@@ -3,6 +3,8 @@ use core::{
     marker::PhantomData,
 };
 
+use alloc::vec::{Vec};
+use alloc::vec;
 use tap::Pipe;
 
 use crate::{
@@ -498,7 +500,6 @@ impl<
                                         .iter()
                                         .map(|b| TInner::clone(clone_b.clone(), b))
                                         .chain([tb])
-                                        .pipe(Box::new)
                                         .collect::<Vec<_>>()
                                 }
                             });

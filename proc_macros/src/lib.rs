@@ -77,9 +77,9 @@ pub fn generate_one_of(count: TokenStream) -> TokenStream {
 
     buffer.push_str(
         &format!("
-            use std::marker::PhantomData;
-            use std::convert::Infallible;
-            use std::clone::Clone;
+            use core::marker::PhantomData;
+            use core::convert::Infallible;
+            use core::clone::Clone;
 
             pub enum OneOf{count}<{type_params}> {{
                 {enum_variants}

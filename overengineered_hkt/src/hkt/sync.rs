@@ -1,10 +1,6 @@
-use core::{
-    convert::Infallible,
-    marker::PhantomData,
-};
+use core::{convert::Infallible, marker::PhantomData};
 
 use alloc::sync::Arc;
-use std::sync::Mutex;
 
 use crate::hkt::{
     DerefHkt, Hkt, HktUnsized, UnsizedHkt, UnsizedHktUnsized,
@@ -50,26 +46,41 @@ impl<'t, TInner: DerefHkt<'t>> DerefHkt<'t> for ArcT<TInner> {
 
 // type ArcAL<TInner> = ArcLT<'static, TInner>;
 
-///
-/// # Safety
-///
-/// Transmutation doesn't cause data races because it either copies a pointer or moved data, which references to are proved not to exist.
-pub struct MutexT<TInner = IdHkt>(Infallible, PhantomData<TInner>);
+#[cfg(not(feature = "no-std"))]
+pub use use_std::*;
 
-impl<'t, TInner: Hkt<'t>> Hkt<'t> for MutexT<TInner> {
-    type F<'a, A: 'a>
-        = Mutex<TInner::F<'a, A>>
-    where
-        't: 'a;
-}
+#[cfg(not(feature = "no-std"))]
+mod use_std {
+    use core::{convert::Infallible, marker::PhantomData};
 
-impl<'t, TInner: HktUnsized<'t>> HktUnsized<'t> for MutexT<TInner> {
-    type FUnsized<'a, A: 'a + ?Sized>
-        = Mutex<TInner::FUnsized<'a, A>>
-    where
-        't: 'a;
-}
+    use std::sync::Mutex;
 
-impl<TInner> HktClassification for MutexT<TInner> {
-    type Choice = hkt_classification::OuterHkt;
+    use crate::hkt::{
+        Hkt, HktUnsized, hkt_classification::{self, HktClassification},
+        id::IdHkt,
+    };
+
+    ///
+    /// # Safety
+    ///
+    /// Transmutation doesn't cause data races because it either copies a pointer or moved data, which references to are proved not to exist.
+    pub struct MutexT<TInner = IdHkt>(Infallible, PhantomData<TInner>);
+
+    impl<'t, TInner: Hkt<'t>> Hkt<'t> for MutexT<TInner> {
+        type F<'a, A: 'a>
+            = Mutex<TInner::F<'a, A>>
+        where
+            't: 'a;
+    }
+
+    impl<'t, TInner: HktUnsized<'t>> HktUnsized<'t> for MutexT<TInner> {
+        type FUnsized<'a, A: 'a + ?Sized>
+            = Mutex<TInner::FUnsized<'a, A>>
+        where
+            't: 'a;
+    }
+
+    impl<TInner> HktClassification for MutexT<TInner> {
+        type Choice = hkt_classification::OuterHkt;
+    }
 }

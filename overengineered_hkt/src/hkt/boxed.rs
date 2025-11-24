@@ -1,6 +1,7 @@
 use core::ops::Deref as _;
 use core::{convert::Infallible, marker::PhantomData};
 
+use alloc::boxed::Box;
 use tap::Pipe as _;
 
 use crate::hkt::bind::BindT;
