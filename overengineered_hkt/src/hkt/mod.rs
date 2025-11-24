@@ -18,7 +18,9 @@ pub mod free;
 pub mod future;
 pub mod id;
 pub mod iter;
-#[cfg(false)]
+#[cfg(feature = "laws")]
+pub mod laws;
+#[cfg(not(feature = "laws"))]
 pub(crate) mod laws;
 pub mod option;
 pub mod reference;
@@ -120,14 +122,13 @@ pub use traits::*;
 //     type UnsizedF<A: 'a> = K::UnsizedFUnsized<dyn Iterator<Item = A>>;
 // }
 
-#[cfg(false)]
 #[cfg(test)]
 mod test {
-    use std::ops::BitAnd;
+    use core::ops::BitAnd;
 
     use const_random::const_random;
 
-    use crate::hkt::{id::IdT, option::OptionT, vec::VecT};
+    use crate::hkt::{option::OptionT, vec::VecT};
 
     type Hkt = VecT<VecT>;
     type HktI = Vec<Vec<i32>>;

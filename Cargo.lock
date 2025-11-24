@@ -329,7 +329,6 @@ dependencies = [
  "naan",
  "negative",
  "negative-impl",
- "proc_macros",
  "ref-cast",
  "static_assertions",
  "tap",

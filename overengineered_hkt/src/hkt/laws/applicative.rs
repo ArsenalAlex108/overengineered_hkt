@@ -1,29 +1,49 @@
-use std::convert::identity;
+use core::convert::identity;
 
 use tap::Pipe as _;
 
-use crate::hkt::{Applicative, DependentCloneK, Functor};
+use crate::{
+    hkt::{
+        Applicative,
+        Functor,
+        // Most hkt don't support T5Of5Hkt
+        one_of::T4Of5Hkt,
+    },
+    marker_classification::DependentClone,
+};
 
 #[must_use]
-pub fn homomorphism_law<'a, F: Applicative<'a>>(
+pub fn homomorphism_law<
+    'a,
+    't: 'a,
+    F: Applicative<'t, DependentClone, DependentClone, T4Of5Hkt>,
+>(
     a: i32,
     f: impl 'a + Fn(i32) -> i32 + Copy,
-    eq: impl Fn(F::F<i32>, F::F<i32>) -> bool,
+    eq: impl 'a + Fn(F::F<'a, i32>, F::F<'a, i32>) -> bool,
 ) -> bool {
-    eq(F::apply(F::pure(f), F::pure(a)), F::pure(f(a)))
+    eq(
+        F::apply::<_, _, fn(i32) -> i32, fn(i32) -> i32, fn(i32) -> i32, _, fn(i32) -> i32>(
+            |i| *i,
+            |i| *i,
+            F::pure(|i| *i, f),
+            F::pure(|i| *i, a),
+        ),
+        F::pure(|i| *i, f(a)),
+    )
 }
 
 #[must_use]
-pub fn interchange_law<'a, F: Applicative<'a>>(
+pub fn interchange_law<'a, 't: 'a, F: Applicative<'t, DependentClone, DependentClone, T4Of5Hkt>>(
     a: i32,
     f1: impl 'a + Fn(i32) -> i32 + Copy,
-    eq: impl Fn(F::F<i32>, F::F<i32>) -> bool,
+    eq: impl 'a + Fn(F::F<'a, i32>, F::F<'a, i32>) -> bool,
 ) -> bool {
     #[inline]
-    pub fn inner<'a, F: Applicative<'a>, F1>(
+    pub fn inner<'a, 't: 'a, F: Applicative<'t, DependentClone, DependentClone, T4Of5Hkt>, F1>(
         a: i32,
         f1: F1,
-        eq: impl Fn(F::F<i32>, F::F<i32>) -> bool,
+        eq: impl Fn(F::F<'a, i32>, F::F<'a, i32>) -> bool,
     ) -> bool
     where
         F1: 'a + Fn(i32) -> i32 + Copy,
@@ -31,8 +51,20 @@ pub fn interchange_law<'a, F: Applicative<'a>>(
         let ap = |x| move |f: F1| f(x);
 
         eq(
-            F::apply(F::pure(f1), F::pure(a)),
-            F::pure(ap(a)).pipe(|fa| F::apply(fa, F::pure(f1))),
+            F::apply::<_, _, fn(i32) -> i32, fn(i32) -> i32, fn(i32) -> i32, _, fn(i32) -> i32>(
+                |i| *i,
+                |i| *i,
+                F::pure(|i| *i, f1),
+                F::pure(|i| *i, a),
+            ),
+            F::pure(|i| *i, ap(a)).pipe(|fa| {
+                F::apply::<_, _, fn(F1) -> i32, fn(F1) -> i32, fn(F1) -> i32, _, fn(F1) -> i32>(
+                    |i| *i,
+                    |i| *i,
+                    fa,
+                    F::pure(|i| *i, f1),
+                )
+            }),
         )
     }
 
@@ -40,26 +72,26 @@ pub fn interchange_law<'a, F: Applicative<'a>>(
 }
 
 #[must_use]
-pub fn identity_law<'a, F: Applicative<'a>>(
+pub fn identity_law<'a, 't: 'a, F: Applicative<'t, DependentClone, DependentClone, T4Of5Hkt>>(
     a: i32,
-    eq: impl Fn(F::F<i32>, F::F<i32>) -> bool,
+    eq: impl 'a + Fn(F::F<'a, i32>, F::F<'a, i32>) -> bool,
 ) -> bool {
     homomorphism_law::<F>(a, identity, eq)
 }
 
 #[must_use]
-pub fn composition_law<'a, F: Applicative<'a>>(
+pub fn composition_law<'a, 't: 'a, F: Applicative<'t, DependentClone, DependentClone, T4Of5Hkt>>(
     a: i32,
     f1: impl 'a + Fn(i32) -> i32 + Copy,
     f2: impl 'a + Fn(i32) -> i32 + Copy,
-    eq: impl Fn(F::F<i32>, F::F<i32>) -> bool,
+    eq: impl Fn(F::F<'a, i32>, F::F<'a, i32>) -> bool,
 ) -> bool {
     #[inline]
-    pub fn inner<'a, F: Applicative<'a>, F1, F2>(
+    pub fn inner<'a, 't: 'a, F: Applicative<'t, DependentClone, DependentClone, T4Of5Hkt>, F1, F2>(
         a: i32,
         f1: F1,
         f2: F2,
-        eq: impl Fn(F::F<i32>, F::F<i32>) -> bool,
+        eq: impl Fn(F::F<'a, i32>, F::F<'a, i32>) -> bool,
     ) -> bool
     where
         F1: 'a + Fn(i32) -> i32 + Copy,
@@ -68,11 +100,33 @@ pub fn composition_law<'a, F: Applicative<'a>>(
         let compose = move |f2: F2| move |f1: F1| move |x| f2(f1(x));
 
         eq(
-            F::apply(
-                F::apply(F::map(compose, F::pure(f2)), F::pure(f1)),
-                F::pure(a),
+            F::apply::<_, _, fn(i32) -> i32, fn(i32) -> i32, fn(i32) -> i32, _, fn(i32) -> i32>(
+                |i| *i,
+                |i| *i,
+                F::apply::<_, _, fn(F1) -> _, fn(F1) -> _, fn(F1) -> _, _, fn(F1) -> _>(
+                    |i| *i,
+                    |i| *i,
+                    F::map::<_, _, fn(F2) -> _, fn(F2) -> _, fn(F2) -> _, _, fn(F2) -> _>(
+                        |i| *i,
+                        |i| *i,
+                        compose,
+                        F::pure(|i| *i, f2),
+                    ),
+                    F::pure(|i| *i, f1),
+                ),
+                F::pure(|i| *i, a),
             ),
-            F::apply(F::pure(f2), F::apply(F::pure(f1), F::pure(a))),
+            F::apply::<_, _, fn(i32) -> i32, fn(i32) -> i32, fn(i32) -> i32, _, fn(i32) -> i32>(
+                |i| *i,
+                |i| *i,
+                F::pure(|i| *i, f2),
+                F::apply::<_, _, fn(i32) -> i32, fn(i32) -> i32, fn(i32) -> i32, _, fn(i32) -> i32>(
+                    |i| *i,
+                    |i| *i,
+                    F::pure(|i| *i, f1),
+                    F::pure(|i| *i, a),
+                ),
+            ),
         )
     }
 

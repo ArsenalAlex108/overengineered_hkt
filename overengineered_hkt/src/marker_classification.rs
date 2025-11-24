@@ -68,6 +68,9 @@ pub struct TypeGuardWasConstBoolTrue;
 
 pub struct ConstBool<const VAL: bool>;
 
+pub type DependentClone = ConstBool<true>;
+pub type IndenpendentClone = ConstBool<false>;
+
 impl<const VAL: bool> sealed::BaseSealed for ConstBool<VAL> {}
 impl<const VAL: bool> IsConstBool for ConstBool<VAL> {
     const BOOL: bool = VAL;

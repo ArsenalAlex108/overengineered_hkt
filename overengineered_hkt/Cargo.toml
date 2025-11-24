@@ -2,7 +2,7 @@
 name = "overengineered_hkt"
 version = "0.1.0"
 edition = "2024"
-description = "Higher-kinded types integrated with lifetimes and matching function types and optional cloning and supporting no_std."
+description = "Expiremental crate of higher-kinded types integrated with lifetimes and matching function types and optional cloning and supporting no_std."
 keywords = ["hkt", "transmute", "one_of", "no_std", "match"]
 categories = ["rust-patterns", "data-structures"]
 repository = ""
@@ -11,6 +11,7 @@ repository = ""
 unstable = []
 transmute = []
 no-std = []
+laws = []
 
 [lints.clippy]
 
@@ -35,5 +36,6 @@ tap = "1.0.1"
 triomphe = "0.1.15"
 try-specialize = "0.1.2"
 typeid = "1.0.3"
-proc_macros = { path = "../proc_macros" }
+# proc_macros are local dependencies for now
+# proc_macros = { path = "../proc_macros" }
 

@@ -1,4 +1,898 @@
-proc_macros::generate_one_of!(5);
+use core::clone::Clone;
+use core::convert::Infallible;
+use core::marker::PhantomData;
+pub enum OneOf5<T1, T2, T3, T4, T5> {
+    T1(T1),
+    T2(T2),
+    T3(T3),
+    T4(T4),
+    T5(T5),
+}
+#[doc = " Specific pattern indicating actual value is one of the given types."]
+#[doc = " Types can either map over all types - or eliminate specific types by requiring specific traits proving actual value is not that type."]
+pub trait OneOf5Hkt<'t> {
+    type OneOf5F<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>: 'a
+    where
+        't: 'a;
+    #[doc = " Converts this object into a matchable enum."]
+    fn into_one_of_5_enum<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>(
+        s: Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> OneOf5<T1, T2, T3, T4, T5>
+    where
+        't: 'a;
+
+    #[doc = " Converts a mut reference to this object into an owned object with mut references to each variant,"]
+    fn as_mut<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a mut Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a mut T1, &'a mut T2, &'a mut T3, &'a mut T4, &'a mut T5>
+    where
+        'b: 'a,
+        't: 'b;
+
+    #[doc = " Converts a reference to this object into an owned object with references to each variant,"]
+    fn as_ref<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a T1, &'a T2, &'a T3, &'a T4, &'a T5>
+    where
+        'b: 'a,
+        't: 'b;
+
+    #[doc = " Perform mapping on each type - but only exactly one of the provided functions will execute."]
+    fn map_one_of_5<
+        'a,
+        'b,
+        'f,
+        T1a: 'a,
+        T2a: 'a,
+        T3a: 'a,
+        T4a: 'a,
+        T5a: 'a,
+        T1b: 'b,
+        T2b: 'b,
+        T3b: 'b,
+        T4b: 'b,
+        T5b: 'b,
+    >(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        map_t1: impl 'f + FnOnce(T1a) -> T1b,
+        map_t2: impl 'f + FnOnce(T2a) -> T2b,
+        map_t3: impl 'f + FnOnce(T3a) -> T3b,
+        map_t4: impl 'f + FnOnce(T4a) -> T4b,
+        map_t5: impl 'f + FnOnce(T5a) -> T5b,
+    ) -> Self::OneOf5F<'b, T1b, T2b, T3b, T4b, T5b>
+    where
+        'a: 'f,
+        'b: 'f,
+        't: 'a + 'b;
+
+    #[doc = " Converts into `T` when all variants have the same type. The default implementation uses [Self::into_one_of_5_enum](OneOf5Hkt::into_one_of_5_enum), but a more efficient implementation may be provided instead."]
+    fn into_one_of_5<'a, T: 'a>(s: Self::OneOf5F<'a, T, T, T, T, T>) -> T
+    where
+        't: 'a,
+    {
+        match Self::into_one_of_5_enum(s) {
+            OneOf5::T1(t) | OneOf5::T2(t) | OneOf5::T3(t) | OneOf5::T4(t) | OneOf5::T5(t) => t,
+        }
+    }
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn create_from<'a, 'b, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a, T: 'b>(
+        _: &Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+        value: T,
+    ) -> Self::OneOf5F<'b, T, T, T, T, T>
+    where
+        't: 'a + 'b;
+
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn clone_one_of_5<
+        'a,
+        'b,
+        T1: 'a + Clone,
+        T2: 'a + Clone,
+        T3: 'a + Clone,
+        T4: 'a + Clone,
+        T5: 'a + Clone,
+    >(
+        old: &'b Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, T1, T2, T3, T4, T5>
+    where
+        'a: 'b,
+        't: 'a;
+}
+#[doc = " Indicates that the Hkt does not contains an instannce of `T1`"]
+pub trait NotT1of5<'t>: OneOf5Hkt<'t> {
+    #[doc = " Set `T1` to an arbitrary type parameter `T1b`."]
+    fn arbitrary_t1<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T1b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T1b>,
+    ) -> Self::OneOf5F<'a, T1b, T2a, T3a, T4a, T5a>
+    where
+        't: 'a;
+}
+#[doc = " Indicates that the Hkt does not contains an instannce of `T2`"]
+pub trait NotT2of5<'t>: OneOf5Hkt<'t> {
+    #[doc = " Set `T2` to an arbitrary type parameter `T2b`."]
+    fn arbitrary_t2<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T2b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T2b>,
+    ) -> Self::OneOf5F<'a, T1a, T2b, T3a, T4a, T5a>
+    where
+        't: 'a;
+}
+#[doc = " Indicates that the Hkt does not contains an instannce of `T3`"]
+pub trait NotT3of5<'t>: OneOf5Hkt<'t> {
+    #[doc = " Set `T3` to an arbitrary type parameter `T3b`."]
+    fn arbitrary_t3<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T3b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T3b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3b, T4a, T5a>
+    where
+        't: 'a;
+}
+#[doc = " Indicates that the Hkt does not contains an instannce of `T4`"]
+pub trait NotT4of5<'t>: OneOf5Hkt<'t> {
+    #[doc = " Set `T4` to an arbitrary type parameter `T4b`."]
+    fn arbitrary_t4<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T4b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T4b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3a, T4b, T5a>
+    where
+        't: 'a;
+}
+#[doc = " Indicates that the Hkt does not contains an instannce of `T5`"]
+pub trait NotT5of5<'t>: OneOf5Hkt<'t> {
+    #[doc = " Set `T5` to an arbitrary type parameter `T5b`."]
+    fn arbitrary_t5<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T5b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T5b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5b>
+    where
+        't: 'a;
+}
+pub struct T1Of5Hkt(Infallible);
+
+impl<'t> OneOf5Hkt<'t> for T1Of5Hkt {
+    type OneOf5F<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>
+        = T1
+    where
+        't: 'a;
+    #[doc = " Converts this object into a matchable enum."]
+    fn into_one_of_5_enum<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>(
+        s: Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> OneOf5<T1, T2, T3, T4, T5>
+    where
+        't: 'a,
+    {
+        OneOf5::T1(s)
+    }
+    #[doc = " Converts a mut reference to this object into an owned object with mut references to each variant,"]
+    fn as_mut<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a mut Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a mut T1, &'a mut T2, &'a mut T3, &'a mut T4, &'a mut T5>
+    where
+        'b: 'a,
+        't: 'b,
+    {
+        s
+    }
+    #[doc = " Converts a reference to this object into an owned object with references to each variant,"]
+    fn as_ref<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a T1, &'a T2, &'a T3, &'a T4, &'a T5>
+    where
+        'b: 'a,
+        't: 'b,
+    {
+        s
+    }
+    #[doc = " Perform mapping on each type - but only exactly one of the provided functions will execute."]
+    fn map_one_of_5<
+        'a,
+        'b,
+        'f,
+        T1a: 'a,
+        T2a: 'a,
+        T3a: 'a,
+        T4a: 'a,
+        T5a: 'a,
+        T1b: 'b,
+        T2b: 'b,
+        T3b: 'b,
+        T4b: 'b,
+        T5b: 'b,
+    >(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        map_t1: impl 'f + FnOnce(T1a) -> T1b,
+        map_t2: impl 'f + FnOnce(T2a) -> T2b,
+        map_t3: impl 'f + FnOnce(T3a) -> T3b,
+        map_t4: impl 'f + FnOnce(T4a) -> T4b,
+        map_t5: impl 'f + FnOnce(T5a) -> T5b,
+    ) -> Self::OneOf5F<'b, T1b, T2b, T3b, T4b, T5b>
+    where
+        'a: 'f,
+        't: 'a + 'b,
+    {
+        map_t1(s)
+    }
+    #[doc = " Converts into `T` when all variants have the same type. The default implementation uses [Self::into_one_of_5_enum](OneOf5Hkt::into_one_of_5_enum), but a more efficient implementation may be provided instead."]
+    fn into_one_of_5<'a, T: 'a>(s: Self::OneOf5F<'a, T, T, T, T, T>) -> T
+    where
+        't: 'a,
+    {
+        s
+    }
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn create_from<'a, 'b, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a, T: 'b>(
+        _: &Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+        value: T,
+    ) -> Self::OneOf5F<'b, T, T, T, T, T>
+    where
+        't: 'a + 'b,
+    {
+        value
+    }
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn clone_one_of_5<
+        'a,
+        'b,
+        T1: 'a + Clone,
+        T2: 'a + Clone,
+        T3: 'a + Clone,
+        T4: 'a + Clone,
+        T5: 'a + Clone,
+    >(
+        old: &'b Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, T1, T2, T3, T4, T5>
+    where
+        'a: 'b,
+        't: 'a,
+    {
+        old.clone()
+    }
+}
+impl<'t> NotT2of5<'t> for T1Of5Hkt {
+    #[doc = " Set `T1` to an arbitrary type parameter `T1b`."]
+    fn arbitrary_t2<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T2b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T2b>,
+    ) -> Self::OneOf5F<'a, T1a, T2b, T3a, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT3of5<'t> for T1Of5Hkt {
+    #[doc = " Set `T1` to an arbitrary type parameter `T1b`."]
+    fn arbitrary_t3<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T3b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T3b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3b, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT4of5<'t> for T1Of5Hkt {
+    #[doc = " Set `T1` to an arbitrary type parameter `T1b`."]
+    fn arbitrary_t4<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T4b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T4b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3a, T4b, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT5of5<'t> for T1Of5Hkt {
+    #[doc = " Set `T1` to an arbitrary type parameter `T1b`."]
+    fn arbitrary_t5<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T5b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T5b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5b>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+pub struct T2Of5Hkt(Infallible);
+
+impl<'t> OneOf5Hkt<'t> for T2Of5Hkt {
+    type OneOf5F<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>
+        = T2
+    where
+        't: 'a;
+    #[doc = " Converts this object into a matchable enum."]
+    fn into_one_of_5_enum<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>(
+        s: Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> OneOf5<T1, T2, T3, T4, T5>
+    where
+        't: 'a,
+    {
+        OneOf5::T2(s)
+    }
+    #[doc = " Converts a mut reference to this object into an owned object with mut references to each variant,"]
+    fn as_mut<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a mut Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a mut T1, &'a mut T2, &'a mut T3, &'a mut T4, &'a mut T5>
+    where
+        'b: 'a,
+        't: 'b,
+    {
+        s
+    }
+    #[doc = " Converts a reference to this object into an owned object with references to each variant,"]
+    fn as_ref<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a T1, &'a T2, &'a T3, &'a T4, &'a T5>
+    where
+        'b: 'a,
+        't: 'b,
+    {
+        s
+    }
+    #[doc = " Perform mapping on each type - but only exactly one of the provided functions will execute."]
+    fn map_one_of_5<
+        'a,
+        'b,
+        'f,
+        T1a: 'a,
+        T2a: 'a,
+        T3a: 'a,
+        T4a: 'a,
+        T5a: 'a,
+        T1b: 'b,
+        T2b: 'b,
+        T3b: 'b,
+        T4b: 'b,
+        T5b: 'b,
+    >(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        map_t1: impl 'f + FnOnce(T1a) -> T1b,
+        map_t2: impl 'f + FnOnce(T2a) -> T2b,
+        map_t3: impl 'f + FnOnce(T3a) -> T3b,
+        map_t4: impl 'f + FnOnce(T4a) -> T4b,
+        map_t5: impl 'f + FnOnce(T5a) -> T5b,
+    ) -> Self::OneOf5F<'b, T1b, T2b, T3b, T4b, T5b>
+    where
+        'a: 'f,
+        't: 'a + 'b,
+    {
+        map_t2(s)
+    }
+    #[doc = " Converts into `T` when all variants have the same type. The default implementation uses [Self::into_one_of_5_enum](OneOf5Hkt::into_one_of_5_enum), but a more efficient implementation may be provided instead."]
+    fn into_one_of_5<'a, T: 'a>(s: Self::OneOf5F<'a, T, T, T, T, T>) -> T
+    where
+        't: 'a,
+    {
+        s
+    }
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn create_from<'a, 'b, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a, T: 'b>(
+        _: &Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+        value: T,
+    ) -> Self::OneOf5F<'b, T, T, T, T, T>
+    where
+        't: 'a + 'b,
+    {
+        value
+    }
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn clone_one_of_5<
+        'a,
+        'b,
+        T1: 'a + Clone,
+        T2: 'a + Clone,
+        T3: 'a + Clone,
+        T4: 'a + Clone,
+        T5: 'a + Clone,
+    >(
+        old: &'b Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, T1, T2, T3, T4, T5>
+    where
+        'a: 'b,
+        't: 'a,
+    {
+        old.clone()
+    }
+}
+impl<'t> NotT1of5<'t> for T2Of5Hkt {
+    #[doc = " Set `T2` to an arbitrary type parameter `T2b`."]
+    fn arbitrary_t1<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T1b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T1b>,
+    ) -> Self::OneOf5F<'a, T1b, T2a, T3a, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT3of5<'t> for T2Of5Hkt {
+    #[doc = " Set `T2` to an arbitrary type parameter `T2b`."]
+    fn arbitrary_t3<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T3b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T3b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3b, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT4of5<'t> for T2Of5Hkt {
+    #[doc = " Set `T2` to an arbitrary type parameter `T2b`."]
+    fn arbitrary_t4<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T4b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T4b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3a, T4b, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT5of5<'t> for T2Of5Hkt {
+    #[doc = " Set `T2` to an arbitrary type parameter `T2b`."]
+    fn arbitrary_t5<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T5b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T5b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5b>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+pub struct T3Of5Hkt(Infallible);
+
+impl<'t> OneOf5Hkt<'t> for T3Of5Hkt {
+    type OneOf5F<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>
+        = T3
+    where
+        't: 'a;
+    #[doc = " Converts this object into a matchable enum."]
+    fn into_one_of_5_enum<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>(
+        s: Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> OneOf5<T1, T2, T3, T4, T5>
+    where
+        't: 'a,
+    {
+        OneOf5::T3(s)
+    }
+    #[doc = " Converts a mut reference to this object into an owned object with mut references to each variant,"]
+    fn as_mut<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a mut Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a mut T1, &'a mut T2, &'a mut T3, &'a mut T4, &'a mut T5>
+    where
+        'b: 'a,
+        't: 'b,
+    {
+        s
+    }
+    #[doc = " Converts a reference to this object into an owned object with references to each variant,"]
+    fn as_ref<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a T1, &'a T2, &'a T3, &'a T4, &'a T5>
+    where
+        'b: 'a,
+        't: 'b,
+    {
+        s
+    }
+    #[doc = " Perform mapping on each type - but only exactly one of the provided functions will execute."]
+    fn map_one_of_5<
+        'a,
+        'b,
+        'f,
+        T1a: 'a,
+        T2a: 'a,
+        T3a: 'a,
+        T4a: 'a,
+        T5a: 'a,
+        T1b: 'b,
+        T2b: 'b,
+        T3b: 'b,
+        T4b: 'b,
+        T5b: 'b,
+    >(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        map_t1: impl 'f + FnOnce(T1a) -> T1b,
+        map_t2: impl 'f + FnOnce(T2a) -> T2b,
+        map_t3: impl 'f + FnOnce(T3a) -> T3b,
+        map_t4: impl 'f + FnOnce(T4a) -> T4b,
+        map_t5: impl 'f + FnOnce(T5a) -> T5b,
+    ) -> Self::OneOf5F<'b, T1b, T2b, T3b, T4b, T5b>
+    where
+        'a: 'f,
+        't: 'a + 'b,
+    {
+        map_t3(s)
+    }
+    #[doc = " Converts into `T` when all variants have the same type. The default implementation uses [Self::into_one_of_5_enum](OneOf5Hkt::into_one_of_5_enum), but a more efficient implementation may be provided instead."]
+    fn into_one_of_5<'a, T: 'a>(s: Self::OneOf5F<'a, T, T, T, T, T>) -> T
+    where
+        't: 'a,
+    {
+        s
+    }
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn create_from<'a, 'b, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a, T: 'b>(
+        _: &Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+        value: T,
+    ) -> Self::OneOf5F<'b, T, T, T, T, T>
+    where
+        't: 'a + 'b,
+    {
+        value
+    }
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn clone_one_of_5<
+        'a,
+        'b,
+        T1: 'a + Clone,
+        T2: 'a + Clone,
+        T3: 'a + Clone,
+        T4: 'a + Clone,
+        T5: 'a + Clone,
+    >(
+        old: &'b Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, T1, T2, T3, T4, T5>
+    where
+        'a: 'b,
+        't: 'a,
+    {
+        old.clone()
+    }
+}
+impl<'t> NotT1of5<'t> for T3Of5Hkt {
+    #[doc = " Set `T3` to an arbitrary type parameter `T3b`."]
+    fn arbitrary_t1<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T1b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T1b>,
+    ) -> Self::OneOf5F<'a, T1b, T2a, T3a, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT2of5<'t> for T3Of5Hkt {
+    #[doc = " Set `T3` to an arbitrary type parameter `T3b`."]
+    fn arbitrary_t2<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T2b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T2b>,
+    ) -> Self::OneOf5F<'a, T1a, T2b, T3a, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT4of5<'t> for T3Of5Hkt {
+    #[doc = " Set `T3` to an arbitrary type parameter `T3b`."]
+    fn arbitrary_t4<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T4b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T4b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3a, T4b, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT5of5<'t> for T3Of5Hkt {
+    #[doc = " Set `T3` to an arbitrary type parameter `T3b`."]
+    fn arbitrary_t5<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T5b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T5b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5b>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+pub struct T4Of5Hkt(Infallible);
+
+impl<'t> OneOf5Hkt<'t> for T4Of5Hkt {
+    type OneOf5F<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>
+        = T4
+    where
+        't: 'a;
+    #[doc = " Converts this object into a matchable enum."]
+    fn into_one_of_5_enum<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>(
+        s: Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> OneOf5<T1, T2, T3, T4, T5>
+    where
+        't: 'a,
+    {
+        OneOf5::T4(s)
+    }
+    #[doc = " Converts a mut reference to this object into an owned object with mut references to each variant,"]
+    fn as_mut<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a mut Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a mut T1, &'a mut T2, &'a mut T3, &'a mut T4, &'a mut T5>
+    where
+        'b: 'a,
+        't: 'b,
+    {
+        s
+    }
+    #[doc = " Converts a reference to this object into an owned object with references to each variant,"]
+    fn as_ref<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a T1, &'a T2, &'a T3, &'a T4, &'a T5>
+    where
+        'b: 'a,
+        't: 'b,
+    {
+        s
+    }
+    #[doc = " Perform mapping on each type - but only exactly one of the provided functions will execute."]
+    fn map_one_of_5<
+        'a,
+        'b,
+        'f,
+        T1a: 'a,
+        T2a: 'a,
+        T3a: 'a,
+        T4a: 'a,
+        T5a: 'a,
+        T1b: 'b,
+        T2b: 'b,
+        T3b: 'b,
+        T4b: 'b,
+        T5b: 'b,
+    >(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        map_t1: impl 'f + FnOnce(T1a) -> T1b,
+        map_t2: impl 'f + FnOnce(T2a) -> T2b,
+        map_t3: impl 'f + FnOnce(T3a) -> T3b,
+        map_t4: impl 'f + FnOnce(T4a) -> T4b,
+        map_t5: impl 'f + FnOnce(T5a) -> T5b,
+    ) -> Self::OneOf5F<'b, T1b, T2b, T3b, T4b, T5b>
+    where
+        'a: 'f,
+        't: 'a + 'b,
+    {
+        map_t4(s)
+    }
+    #[doc = " Converts into `T` when all variants have the same type. The default implementation uses [Self::into_one_of_5_enum](OneOf5Hkt::into_one_of_5_enum), but a more efficient implementation may be provided instead."]
+    fn into_one_of_5<'a, T: 'a>(s: Self::OneOf5F<'a, T, T, T, T, T>) -> T
+    where
+        't: 'a,
+    {
+        s
+    }
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn create_from<'a, 'b, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a, T: 'b>(
+        _: &Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+        value: T,
+    ) -> Self::OneOf5F<'b, T, T, T, T, T>
+    where
+        't: 'a + 'b,
+    {
+        value
+    }
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn clone_one_of_5<
+        'a,
+        'b,
+        T1: 'a + Clone,
+        T2: 'a + Clone,
+        T3: 'a + Clone,
+        T4: 'a + Clone,
+        T5: 'a + Clone,
+    >(
+        old: &'b Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, T1, T2, T3, T4, T5>
+    where
+        'a: 'b,
+        't: 'a,
+    {
+        old.clone()
+    }
+}
+impl<'t> NotT1of5<'t> for T4Of5Hkt {
+    #[doc = " Set `T4` to an arbitrary type parameter `T4b`."]
+    fn arbitrary_t1<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T1b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T1b>,
+    ) -> Self::OneOf5F<'a, T1b, T2a, T3a, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT2of5<'t> for T4Of5Hkt {
+    #[doc = " Set `T4` to an arbitrary type parameter `T4b`."]
+    fn arbitrary_t2<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T2b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T2b>,
+    ) -> Self::OneOf5F<'a, T1a, T2b, T3a, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT3of5<'t> for T4Of5Hkt {
+    #[doc = " Set `T4` to an arbitrary type parameter `T4b`."]
+    fn arbitrary_t3<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T3b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T3b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3b, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT5of5<'t> for T4Of5Hkt {
+    #[doc = " Set `T4` to an arbitrary type parameter `T4b`."]
+    fn arbitrary_t5<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T5b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T5b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5b>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+pub struct T5Of5Hkt(Infallible);
+
+impl<'t> OneOf5Hkt<'t> for T5Of5Hkt {
+    type OneOf5F<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>
+        = T5
+    where
+        't: 'a;
+    #[doc = " Converts this object into a matchable enum."]
+    fn into_one_of_5_enum<'a, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a>(
+        s: Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> OneOf5<T1, T2, T3, T4, T5>
+    where
+        't: 'a,
+    {
+        OneOf5::T5(s)
+    }
+    #[doc = " Converts a mut reference to this object into an owned object with mut references to each variant,"]
+    fn as_mut<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a mut Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a mut T1, &'a mut T2, &'a mut T3, &'a mut T4, &'a mut T5>
+    where
+        'b: 'a,
+        't: 'b,
+    {
+        s
+    }
+    #[doc = " Converts a reference to this object into an owned object with references to each variant,"]
+    fn as_ref<'a, 'b, T1: 'b, T2: 'b, T3: 'b, T4: 'b, T5: 'b>(
+        s: &'a Self::OneOf5F<'b, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, &'a T1, &'a T2, &'a T3, &'a T4, &'a T5>
+    where
+        'b: 'a,
+        't: 'b,
+    {
+        s
+    }
+    #[doc = " Perform mapping on each type - but only exactly one of the provided functions will execute."]
+    fn map_one_of_5<
+        'a,
+        'b,
+        'f,
+        T1a: 'a,
+        T2a: 'a,
+        T3a: 'a,
+        T4a: 'a,
+        T5a: 'a,
+        T1b: 'b,
+        T2b: 'b,
+        T3b: 'b,
+        T4b: 'b,
+        T5b: 'b,
+    >(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        map_t1: impl 'f + FnOnce(T1a) -> T1b,
+        map_t2: impl 'f + FnOnce(T2a) -> T2b,
+        map_t3: impl 'f + FnOnce(T3a) -> T3b,
+        map_t4: impl 'f + FnOnce(T4a) -> T4b,
+        map_t5: impl 'f + FnOnce(T5a) -> T5b,
+    ) -> Self::OneOf5F<'b, T1b, T2b, T3b, T4b, T5b>
+    where
+        'a: 'f,
+        't: 'a + 'b,
+    {
+        map_t5(s)
+    }
+    #[doc = " Converts into `T` when all variants have the same type. The default implementation uses [Self::into_one_of_5_enum](OneOf5Hkt::into_one_of_5_enum), but a more efficient implementation may be provided instead."]
+    fn into_one_of_5<'a, T: 'a>(s: Self::OneOf5F<'a, T, T, T, T, T>) -> T
+    where
+        't: 'a,
+    {
+        s
+    }
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn create_from<'a, 'b, T1: 'a, T2: 'a, T3: 'a, T4: 'a, T5: 'a, T: 'b>(
+        _: &Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+        value: T,
+    ) -> Self::OneOf5F<'b, T, T, T, T, T>
+    where
+        't: 'a + 'b,
+    {
+        value
+    }
+    #[doc = " Create a new object from an existing one to store a different value."]
+    fn clone_one_of_5<
+        'a,
+        'b,
+        T1: 'a + Clone,
+        T2: 'a + Clone,
+        T3: 'a + Clone,
+        T4: 'a + Clone,
+        T5: 'a + Clone,
+    >(
+        old: &'b Self::OneOf5F<'a, T1, T2, T3, T4, T5>,
+    ) -> Self::OneOf5F<'a, T1, T2, T3, T4, T5>
+    where
+        'a: 'b,
+        't: 'a,
+    {
+        old.clone()
+    }
+}
+impl<'t> NotT1of5<'t> for T5Of5Hkt {
+    #[doc = " Set `T5` to an arbitrary type parameter `T5b`."]
+    fn arbitrary_t1<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T1b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T1b>,
+    ) -> Self::OneOf5F<'a, T1b, T2a, T3a, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT2of5<'t> for T5Of5Hkt {
+    #[doc = " Set `T5` to an arbitrary type parameter `T5b`."]
+    fn arbitrary_t2<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T2b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T2b>,
+    ) -> Self::OneOf5F<'a, T1a, T2b, T3a, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT3of5<'t> for T5Of5Hkt {
+    #[doc = " Set `T5` to an arbitrary type parameter `T5b`."]
+    fn arbitrary_t3<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T3b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T3b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3b, T4a, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
+impl<'t> NotT4of5<'t> for T5Of5Hkt {
+    #[doc = " Set `T5` to an arbitrary type parameter `T5b`."]
+    fn arbitrary_t4<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T4b: 'a>(
+        s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
+        _type_infer: PhantomData<T4b>,
+    ) -> Self::OneOf5F<'a, T1a, T2a, T3a, T4b, T5a>
+    where
+        't: 'a,
+    {
+        s
+    }
+}
 
 // use std::{convert::Infallible, marker::PhantomData};
 

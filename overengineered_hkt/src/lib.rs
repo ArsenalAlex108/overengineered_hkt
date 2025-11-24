@@ -1,3 +1,5 @@
+#![doc = include_str!("../../README.md")]
+
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 #![warn(clippy::alloc_instead_of_core)]
@@ -15,5 +17,5 @@ pub mod marker_classification;
 pub mod transmute;
 #[cfg(not(feature = "transmute"))]
 pub(crate) mod transmute;
-pub(crate) mod utils;
+pub mod utils;
 

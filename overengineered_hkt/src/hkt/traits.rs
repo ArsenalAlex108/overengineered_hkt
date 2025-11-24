@@ -49,6 +49,9 @@ impl<T> RefUnwindSafe for PhantomMarker<T> {}
 //    x
 // }
 
+/// A is [Sized], Self::F<'a, A> is ?[Sized]
+/// 
+/// `'t` is some arbitrary bound that always outlive every other bound in the hkt so that it can be used as a bound in some places where `'static` is the only other option
 pub trait UnsizedHkt<'t>: 't {
     /// Definition: F<'a, A: 't>: 'a (where 't: 'a is logical but maybe unnecessary)
     ///
@@ -63,6 +66,11 @@ pub trait UnsizedHkt<'t>: 't {
 /// F<'a, A: 'a>: 'a => The instance is bound by the same lifetime as the type
 /// If F<'a, 'b, A: 'a>: 'b => 'a: 'b or 'a includes 'b
 /// Cow<'a, A>: 'a => Cow<'static, A> then A: 'static
+const _: () = {}; 
+
+/// A is [Sized], Self::F<'a, A> is [Sized]
+/// 
+/// `'t` is some arbitrary bound that always outlive every other bound in the hkt so that it can be used as a bound in some places where `'static` is the only other option
 pub trait Hkt<'t>: UnsizedHkt<'t> {
     type F<'a, A: 'a>: 'a + TyEq<Self::UnsizedF<'a, A>>
     where
@@ -138,6 +146,9 @@ pub trait Hkt<'t>: UnsizedHkt<'t> {
 //     type F<'t, TNewtype: HktTransformer, TInner: Hkt> = VecT<TNewtype::F<'t, (), TInner>>;
 // }
 
+/// A is ?[Sized], Self::F<'a, A> is ?[Sized]
+/// 
+/// `'t` is some arbitrary bound that always outlive every other bound in the hkt so that it can be used as a bound in some places where `'static` is the only other option
 pub trait UnsizedHktUnsized<'t>:
     // TODO:
     UnsizedHkt<'t, UnsizedF<'t, ()> = Self::UnsizedFUnsized<'t, ()>>
@@ -145,6 +156,9 @@ pub trait UnsizedHktUnsized<'t>:
     type UnsizedFUnsized<'a, A: 'a + ?Sized>: 'a + ?Sized where 't: 'a;
 }
 
+/// A is ?[Sized]
+/// 
+/// `'t` is some arbitrary bound that always outlive every other bound in the hkt so that it can be used as a bound in some places where `'static` is the only other option
 pub trait HktUnsized<'t>:
     UnsizedHktUnsized<'t>
     // TODO:

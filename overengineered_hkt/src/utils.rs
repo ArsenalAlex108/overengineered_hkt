@@ -61,14 +61,25 @@ impl<T: naan::fun::F1<A>, A> AsFn<A> for T {
 /// Wraps a value and a cloning function. Useful for moving them into closures and cloning later.
 /// # Example:
 /// ```
-/// // Struct not implementing Clone
+/// use overengineered_hkt::utils::CloneWrapper;
+/// 
+/// // Suppose this is an opaque struct not implementing Clone
 /// struct Val(i32);
 /// 
 /// let val = Val(1);
 /// 
 /// let func = move || val;
-/// // func implements Clone
-/// func.clone()
+/// // func does not implements Clone
+/// // func.clone();
+/// 
+/// // But does with the wrapper:
+/// 
+/// let wrapper = CloneWrapper(Val(1), |i: &Val| Val(i.0));
+/// 
+/// let func = move || wrapper.clone().0;
+/// // Now func does implement Clone
+/// func.clone();
+/// 
 /// ```
 pub struct CloneWrapper<T, F>(pub T, pub F);
 
