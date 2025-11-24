@@ -3,13 +3,18 @@ name = "overengineered_hkt"
 version = "0.1.0"
 edition = "2024"
 description = "Higher-kinded types with transmutability, user-defined constraints, tuple mapping using generic functions."
-keywords = ["hkt", "transmute"]
+keywords = ["hkt", "transmute", "one_of"]
 categories = ["rust-patterns", "data-structures"]
 repository = ""
 
 [features]
 unstable = []
 transmute = []
+
+[lints.clippy]
+
+[badges]
+maintenance = { status = "expiremental" }
 
 [dependencies]
 cast_trait_object = "0.1.4"

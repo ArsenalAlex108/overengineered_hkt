@@ -14,7 +14,7 @@ use crate::{
 ///
 /// [Applicative]: crate::hkt::Applicative
 /// [Monad]: crate::hkt::Monad
-pub struct BindT<TOuter = IdHkt, TInner = IdHkt>(Infallible, PhantomData<(TOuter, TInner)>);
+pub struct BindT<TOuter, TInner>(Infallible, PhantomData<(TOuter, TInner)>);
 
 // impl<TOuter: UnsizedHktUnsized, TInner: UnsizedHkt> UnsizedHkt for BindT<TOuter, TInner> {
 //     type UnsizedF<'a, A: 'a> = TOuter::UnsizedFUnsized<'a, TInner::UnsizedF<'t, A>>

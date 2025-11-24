@@ -1,5 +1,3 @@
-use std::mem::needs_drop;
-
 #[cfg(false)]
 pub(crate) fn compose_fn_once<A, B, C, F, G>(f: F, g: G) -> impl FnOnce(A) -> C
 where

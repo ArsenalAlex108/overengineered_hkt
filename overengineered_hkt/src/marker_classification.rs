@@ -4,12 +4,9 @@ use std::{
     panic::{RefUnwindSafe, UnwindSafe},
 };
 
-use crate::hkt::{
-    Hkt, PhantomMarker, UnsizedHkt,
-    hkt_classification::{self, HktClassification},
-    id::IdHkt,
-    nullary::NullaryHkt,
-};
+use crate::{hkt::{
+    Hkt, HktUnsized, PhantomMarker, UnsizedHkt, hkt_classification::{self, HktClassification}, id::IdHkt, nullary::NullaryHkt
+}, transmute};
 
 mod sealed {
     use std::convert::Infallible;
@@ -24,10 +21,38 @@ mod sealed {
     /// Key for [AssociatedSealed] - which itself is sealed.
     pub struct AssociatedKey(Infallible);
     impl AssociatedSealed for AssociatedKey {}
+
+    pub trait TyEqSealed {
+        type T: ?Sized;
+    }
+
+    impl<T: ?Sized> TyEqSealed for T {
+        type T = T;
+    }
 }
 
+pub trait TyEq<T: ?Sized>: sealed::TyEqSealed<T = T> {
+    fn transmute_hkt_into<'a, 't, F: HktUnsized<'t>>(a: F::FUnsized<'a, Self>) -> F::FUnsized<'a, T> {
+        // SAFETY: `Self` and `T` are the same type,
+        // therefore F::FUnsized<'a, Self> and F::FUnsized<'a, T>
+        // are the same type, hence transmutation between the two
+        // are always safe.
+        unsafe { transmute::transmute_unchecked(a) }
+    }
+
+    fn transmute_hkt_from<'a, 't, F: HktUnsized<'t>>(a: F::FUnsized<'a, T>) -> F::FUnsized<'a ,Self> {
+        // SAFETY: `Self` and `T` are the same type,
+        // therefore F::FUnsized<'a, Self> and F::FUnsized<'a, T>
+        // are the same type, hence transmutation between the two
+        // are always safe.
+        unsafe { transmute::transmute_unchecked(a) }
+    }
+}
+
+impl<T: ?Sized> TyEq<T> for T {}
+
 /// Implemented by [`ConstBool<true>`](ConstBool) and [`ConstBool<false>`](ConstBool)
-pub trait IsConstBool: sealed::BaseSealed {
+pub(crate) trait IsConstBool: sealed::BaseSealed {
     const BOOL: bool;
 }
 

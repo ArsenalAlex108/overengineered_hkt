@@ -1,21 +1,33 @@
-use std::convert::Infallible;
+use std::{convert::Infallible, marker::PhantomData};
 
 use tap::Pipe as _;
 
 use crate::{
     hkt::{
-        Applicative, CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, PhantomMarker, Pure, Rfoldable, Traversable, hkt_classification::{self, HktClassification}, one_of::OneOf5Hkt
-    }, marker_classification::{ConstBool, TypeGuard}
+        Applicative, CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Hkt,
+        HktUnsized, IntoConverged, Monad, PhantomMarker, Pure, Rfoldable, Traversable,
+        hkt_classification::{self, HktClassification},
+        id::IdHkt,
+        one_of::{NotT5of5, OneOf5Hkt},
+    },
+    marker_classification::{ConstBool, TypeGuard},
+    utils::CloneWrapper,
 };
 
-pub struct OptionT<TInner>(Infallible, PhantomMarker<TInner>);
+pub struct OptionT<TInner = IdHkt>(Infallible, PhantomMarker<TInner>);
 
 impl<'t, TInner: Hkt<'t>> Hkt<'t> for OptionT<TInner> {
-    type F<'a, A: 'a> = Option<TInner::F<'a, A>> where 't: 'a;
+    type F<'a, A: 'a>
+        = Option<TInner::F<'a, A>>
+    where
+        't: 'a;
 }
 
 impl<'t, TInner: HktUnsized<'t>> HktUnsized<'t> for OptionT<TInner> {
-    type FUnsized<'a, A: 'a + ?Sized> = Option<TInner::FUnsized<'a, A>> where 't: 'a;
+    type FUnsized<'a, A: 'a + ?Sized>
+        = Option<TInner::FUnsized<'a, A>>
+    where
+        't: 'a;
 }
 
 impl<TInner> HktClassification for OptionT<TInner> {
@@ -46,14 +58,7 @@ impl<
         F1Copy: 'a + Fn(A) -> B + Copy,
         't: 'a,
     {
-        fa.map(move |x| {
-            TInner::map(
-                clone_a.clone(),
-                clone_b.clone(),
-                f,
-                x,
-            )
-        })
+        fa.map(move |x| TInner::map(clone_a.clone(), clone_b.clone(), f, x))
     }
 }
 
@@ -84,16 +89,9 @@ impl<
         'b: 'f,
         't: 'a + 'b,
     {
-
         match fb {
-            Some(t) => TInner::fold_while(
-                clone_a.clone(),
-                clone_b.clone(),
-                f,
-                init,
-                t,
-            ),
-            None => FoldWhile::Break(init)
+            Some(t) => TInner::fold_while(clone_a.clone(), clone_b.clone(), f, init, t),
+            None => FoldWhile::Break(init),
         }
     }
 }
@@ -125,23 +123,14 @@ impl<
         'b: 'f,
         't: 'a + 'b,
     {
-
         match fb {
-            Some(t) => TInner::rfold_while(
-                clone_a.clone(),
-                clone_b.clone(),
-                f,
-                init,
-                t,
-            ),
-            None => FoldWhile::Break(init)
+            Some(t) => TInner::rfold_while(clone_a.clone(), clone_b.clone(), f, init, t),
+            None => FoldWhile::Break(init),
         }
     }
 }
 
-impl<'t, ReqIn: TypeGuard<'t>, TInner: Pure<'t, ReqIn>> Pure<'t, ReqIn>
-    for OptionT<TInner>
-{
+impl<'t, ReqIn: TypeGuard<'t>, TInner: Pure<'t, ReqIn>> Pure<'t, ReqIn> for OptionT<TInner> {
     fn pure<'a, A>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
         a: A,
@@ -150,8 +139,7 @@ impl<'t, ReqIn: TypeGuard<'t>, TInner: Pure<'t, ReqIn>> Pure<'t, ReqIn>
         A: 'a,
         't: 'a,
     {
-        TInner::pure(clone_a, a)
-            .pipe(Some)
+        TInner::pure(clone_a, a).pipe(Some)
     }
 }
 
@@ -186,52 +174,110 @@ impl<
     }
 }
 
-// impl<
-//     't,
-//     E: 't + Add<Output = E> + Clone,
-//     ReqIn: TypeGuard<'t>,
-//     ReqOut: TypeGuard<'t>,
-//     // TODO: Consider if cloning funcs should be [Copy]
-//     ReqF1: OneOf5Hkt<'t>,
-//     TInner: Monad<'t, ReqIn, ReqOut, ReqF1> + Foldable<'t, ReqIn, ReqOut, ReqF1> + CloneK<'t, ReqOut>
-// > Monad<'t, ReqIn, ReqOut, ReqF1> for OptionT<TInner>
-// {
-//     fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-//         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-//         clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
-//         fa: Self::F<'a, A>,
-//         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
-//     ) -> Self::F<'a, B>
-//     where
-//         A: 'a,
-//         B: 'a,
-//         F1Once: 'a + FnOnce(A) -> Self::F<'a, B>,
-//         F1Mut: 'a + FnMut(A) -> Self::F<'a, B>,
-//         F1Fn: 'a + Fn(A) -> Self::F<'a, B>,
-//         F1Clone: 'a + Fn(A) -> Self::F<'a, B> + Clone,
-//         F1Copy: 'a + Fn(A) -> Self::F<'a, B> + Copy,
-//         't: 'a,
-//     {
-//         match fa {
-//             Ok(ta) => {
-//                 let nested = TInner::map(
-//                     clone_a.clone(),
-//                     |res| match res.as_ref() {
-//                         Ok(tb) => Ok(
-//                             TInner::clone(clone_b.clone(), tb)
-//                         ),
-//                         Err(e) => e.clone(),
-//                     },
-//                     f,
-//                     ta
-//                 )
+// TODO: Test
+impl<
+    't,
+    ReqIn: TypeGuard<'t>,
+    // ?: Consider if cloning funcs should be [Copy]
+    // Final: No - CloneWrappers cannot implement Copy
+    ReqF1: OneOf5Hkt<'t> + NotT5of5<'t>,
+    TInner: Monad<'t, ReqIn, ReqIn, ReqF1> + Foldable<'t, ReqIn, ReqIn, ReqF1> + CloneK<'t, ReqIn>,
+> Monad<'t, ReqIn, ReqIn, ReqF1> for OptionT<TInner>
+{
+    fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqIn::Output<'a, B> + Clone,
+        fa: Self::F<'a, A>,
+        f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
+    ) -> Self::F<'a, B>
+    where
+        A: 'a,
+        B: 'a,
+        F1Once: 'a + FnOnce(A) -> Self::F<'a, B>,
+        F1Mut: 'a + FnMut(A) -> Self::F<'a, B>,
+        F1Fn: 'a + Fn(A) -> Self::F<'a, B>,
+        F1Clone: 'a + Fn(A) -> Self::F<'a, B> + Clone,
+        F1Copy: 'a + Fn(A) -> Self::F<'a, B> + Copy,
+        't: 'a,
+    {
+        match fa {
+            Some(ta) => {
+                let f_tag = ReqF1::create_from(&f, ());
 
+                let nested: <TInner as Hkt<'t>>::F<'a, Option<<TInner as Hkt<'t>>::F<'a, B>>> =
+                    TInner::map(
+                        clone_a.clone(),
+                        {
+                            let clone_b = clone_b.clone();
+                            move |res| {
+                                match res {
+                                    Some(tb) => Some(TInner::clone(clone_b.clone(), tb)),
+                                    None => None,
+                                }
+                                .pipe(ReqIn::into_guarded)
+                            }
+                        },
+                        f,
+                        ta,
+                    );
 
-//             },
-//             Err(e) => Err(e),
-//         }
-//     }
-// }
+                TInner::fold_while(
+                    |b| {
+                        b.as_ref()
+                            .map(|fb| TInner::clone(clone_b.clone(), fb))
+                            .pipe(ReqIn::into_guarded)
+                    },
+                    |b| {
+                        b.as_ref()
+                            .map(|fb| TInner::clone(clone_b.clone(), fb))
+                            .pipe(ReqIn::into_guarded)
+                    },
+                    ReqF1::create_from(&f_tag, |sum: Option<<TInner as Hkt<'t>>::F<'a, B>>, a| {
+                        match (sum, a) {
+                            (None, None) => None,
+                            (Some(a), None) | (None, Some(a)) => Some(a),
+                            (Some(a), Some(b)) => Some({
+                                let clone_b2 = clone_b.clone();
+                                let b = CloneWrapper(b, move |b: &TInner::F<'a, B>| {
+                                    TInner::clone(clone_b2.clone(), b)
+                                });
+
+                                TInner::bind(
+                                    clone_b.clone(),
+                                    clone_b.clone(),
+                                    a,
+                                    ReqF1::create_from(&f_tag, move |_| b.clone().0).pipe(|f| {
+                                        ReqF1::arbitrary_t5(
+                                            f,
+                                            PhantomData::<fn(B) -> TInner::F<'a, B>>,
+                                        )
+                                    }),
+                                )
+                            }),
+                        }
+                        .pipe(FoldWhile::Continue)
+                    })
+                    .pipe(|f| {
+                        ReqF1::arbitrary_t5(
+                            f,
+                            PhantomData::<
+                                fn(
+                                    Option<TInner::F<'a, B>>,
+                                    Option<TInner::F<'a, B>>,
+                                )
+                                    -> FoldWhile<Option<TInner::F<'a, B>>>,
+                            >,
+                        )
+                    }),
+                    None,
+                    nested,
+                )
+                .into_converged()
+            }
+            None => None,
+        }
+    }
+}
 
 impl<
     't,
@@ -266,31 +312,35 @@ impl<
                     clone_a.clone(),
                     clone_b.clone(),
                     f,
-                    ta
+                    ta,
                 );
 
                 <F as Functor<'t, ReqIn, ReqOut, ReqF1>>::map(
                     {
-                    let clone_b = clone_b.clone();
-                    move |a| TInner::clone(clone_b.clone(), a).pipe(ReqIn::into_guarded)
+                        let clone_b = clone_b.clone();
+                        move |a| TInner::clone(clone_b.clone(), a).pipe(ReqIn::into_guarded)
                     },
-                    move |rb: &_| match rb.as_ref() {
-                        Some(tb) => Some(
-                            TInner::clone(clone_b.clone(), tb)
-                        ),
-                        None => None,
-                    }.pipe(ReqOut::into_guarded),
+                    move |rb: &_| {
+                        match rb.as_ref() {
+                            Some(tb) => Some(TInner::clone(clone_b.clone(), tb)),
+                            None => None,
+                        }
+                        .pipe(ReqOut::into_guarded)
+                    },
                     f_map,
-                    res
+                    res,
                 )
-            },
-            None => F::pure(move |res| match res.as_ref() {
-                        Some(tb) => Some(
-                            TInner::clone(clone_b.clone(), tb)
-                        ),
+            }
+            None => F::pure(
+                move |res| {
+                    match res.as_ref() {
+                        Some(tb) => Some(TInner::clone(clone_b.clone(), tb)),
                         None => None,
-                    }.pipe(ReqIn::into_guarded)
-                 , None),
+                    }
+                    .pipe(ReqIn::into_guarded)
+                },
+                None,
+            ),
         }
     }
 }
@@ -335,7 +385,7 @@ impl<'t, ReqIn: TypeGuard<'t>, TInner: CloneK<'t, ReqIn>> CloneK<'t, ReqIn> for 
     {
         match a {
             Some(ta) => Some(TInner::clone(clone_a, ta)),
-            None => None
+            None => None,
         }
     }
 }

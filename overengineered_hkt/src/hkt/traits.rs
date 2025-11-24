@@ -1,28 +1,23 @@
 use std::{
-    borrow::Cow,
-    convert::{Infallible, identity},
+    convert::Infallible,
     fmt::Debug,
-    iter::Cycle,
     marker::PhantomData,
-    ops::{Add, ControlFlow},
+    ops::ControlFlow,
     panic::{RefUnwindSafe, UnwindSafe},
     sync::Arc,
 };
 
-use dyn_clone::{DynClone, clone};
-use futures::FutureExt;
-use static_assertions::const_assert_eq;
+use dyn_clone::DynClone;
 use tap::Pipe as _;
 
 use crate::{
-    TyEq,
     hkt::{
         hkt_classification::HktClassification,
         id::IdHkt,
         nullary::NullaryHkt,
-        one_of::{NotT1of5, NotT2of5, NotT3of5, OneOf5Hkt, T1Of5Hkt},
+        one_of::{NotT1of5, NotT2of5, NotT3of5, OneOf5Hkt},
     },
-    marker_classification::{AssertBlankOutput, ConstBool, TypeGuard, TypeGuardK},
+    marker_classification::{AssertBlankOutput, ConstBool, TypeGuard, TyEq},
     transmute::unsafe_transmute_id,
     utils::CloneWrapper,
 };
@@ -199,9 +194,9 @@ impl<'t, T: HktUnsized<'t> + HktClassification<Choice = hkt_classification::Oute
 // }
 
 /// Converts enum with all variants being T into T
-pub trait IntoEither {
+pub trait IntoConverged {
     type T;
-    fn into_either(self) -> Self::T;
+    fn into_converged(self) -> Self::T;
 }
 
 // impl<'t, T, E> IntoTryResultExt for TryFlow<T, E> {
@@ -233,10 +228,10 @@ pub trait IntoEither {
 //     }
 // }
 
-impl<T> IntoEither for FoldWhile<T> {
+impl<T> IntoConverged for FoldWhile<T> {
     type T = T;
 
-    fn into_either(self) -> Self::T {
+    fn into_converged(self) -> Self::T {
         match self {
             ControlFlow::Continue(t) => t,
             ControlFlow::Break(t) => t,
@@ -244,9 +239,9 @@ impl<T> IntoEither for FoldWhile<T> {
     }
 }
 
-impl<T> IntoEither for Result<T, T> {
+impl<T> IntoConverged for Result<T, T> {
     type T = T;
-    fn into_either(self) -> T {
+    fn into_converged(self) -> T {
         match self {
             Ok(t) => t,
             Err(t) => t,
@@ -463,13 +458,13 @@ mod s {
 // Fn: Accept: { Fn... } CanGet { FnOnce..Fn }
 //
 
-/// TODO: Should our functions have this signature?
-/// Requirements:
-/// - Functions must be sharable and can be called multiple times
-/// - F<A> must be given a choice to own the functions (so that their lifetime may extend beyond 'a - but is that even definable?)
-/// - We would need Hkt over lifetimes too.
-/// TODO: define map_while/try_map methods => Result<F<B>, E>
-/// DO NOT DO THE ABOVE
+// TODO: Should our functions have this signature?
+// Requirements:
+// - Functions must be sharable and can be called multiple times
+// - F<A> must be given a choice to own the functions (so that their lifetime may extend beyond 'a - but is that even definable?)
+// - We would need Hkt over lifetimes too.
+// TODO: define map_while/try_map methods => Result<F<B>, E>
+// DO NOT DO THE ABOVE
 
 // Accept FnOnce: TInner is required to also only accept FnOnce (since FnOnce is base)
 //  However since type don't need any functionality from FnOnce's derived traits they can accept any input and work with the corresponding TInner
@@ -695,7 +690,7 @@ pub trait Foldable<
             FoldWhile::Continue(sum)
         });
 
-        <Self as Foldable<'t, ReqIn, ConstBool<false>, ReqF1>>::fold_while::<A, &'e mut E, _, _, _, _, _>(clone_a, |_| AssertBlankOutput, tag, collection, fb).into_either()
+        <Self as Foldable<'t, ReqIn, ConstBool<false>, ReqF1>>::fold_while::<A, &'e mut E, _, _, _, _, _>(clone_a, |_| AssertBlankOutput, tag, collection, fb).into_converged()
     }
 
     /// Hkt version of [Iterator::size_hint]
@@ -843,7 +838,7 @@ pub(crate) trait SemigroupK<'t>: Hkt<'t> {
         't: 'a;
 }
 
-/// TODO
+// /// TODO
 // pub(crate) trait ChoiceK<'t>: Applicative<'t> + SemigroupK<'t> {
 //     fn choose<'a, A: 'a>(a: Self::F<'a, A>, b: Self::F<'a, A>) -> Self::F<'a, A>
 //     where
@@ -926,8 +921,21 @@ impl<'t, ReqIn: TypeGuard<'t>, T: Hkt<'t>> CloneK<'t, ReqIn, ConstBool<false>> f
 //         't: 'a;
 // }
 
+#[cfg(feature = "unstable")]
 /// Similar to [CloneK] but can be set to arbitrary new lifetime
 pub trait CloneOwnedK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output: TypeGuard<'t> = ConstBool<true>>: Hkt<'t> {
+    fn clone_owned<'a, 'b, A>(
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'b, A> + Clone,
+        a: &Self::F<'a, A>,
+    ) -> Self::F<'b, A>
+    where
+        A: 'a + 'b,
+        't: 'a + 'b;
+}
+
+#[cfg(not(feature = "unstable"))]
+/// Similar to [CloneK] but can be set to arbitrary new lifetime
+pub(crate) trait CloneOwnedK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output: TypeGuard<'t> = ConstBool<true>>: Hkt<'t> {
     fn clone_owned<'a, 'b, A>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'b, A> + Clone,
         a: &Self::F<'a, A>,

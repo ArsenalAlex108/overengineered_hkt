@@ -4,21 +4,21 @@ use tap::Pipe as _;
 
 use crate::{
     hkt::{
-        Applicative, CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, PhantomMarker, Pure, Rfoldable, Traversable, hkt_classification::{self, HktClassification}, one_of::OneOf5Hkt
+        Applicative, CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, Monad, PhantomMarker, Pure, Rfoldable, Traversable, hkt_classification::{self, HktClassification}, id::IdHkt, one_of::{OneOf5Hkt, OneOf5}
     }, marker_classification::{ConstBool, TypeGuard}
 };
 
-pub struct ResultT<TInner, E>(Infallible, PhantomMarker<(TInner, E)>);
+pub struct ResultT<E, TInner = IdHkt>(Infallible, PhantomMarker<(TInner, E)>);
 
-impl<'t, TInner: Hkt<'t>, E: 't> Hkt<'t> for ResultT<TInner, E> {
+impl<'t, TInner: Hkt<'t>, E: 't> Hkt<'t> for ResultT<E, TInner> {
     type F<'a, A: 'a> = Result<TInner::F<'a, A>, E> where 't: 'a;
 }
 
-impl<'t, TInner: HktUnsized<'t>, E: 't> HktUnsized<'t> for ResultT<TInner, E> {
+impl<'t, TInner: HktUnsized<'t>, E: 't> HktUnsized<'t> for ResultT<E, TInner> {
     type FUnsized<'a, A: 'a + ?Sized> = Result<TInner::FUnsized<'a, A>, E> where 't: 'a;
 }
 
-impl<TInner, E> HktClassification for ResultT<TInner, E> {
+impl<TInner, E> HktClassification for ResultT<E, TInner> {
     type Choice = hkt_classification::OuterHkt;
 }
 
@@ -29,7 +29,7 @@ impl<
     ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Functor<'t, ReqIn, ReqOut, ReqF1>,
-> Functor<'t, ReqIn, ReqOut, ReqF1> for ResultT<TInner, E>
+> Functor<'t, ReqIn, ReqOut, ReqF1> for ResultT<E, TInner>
 {
     fn map<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
@@ -65,7 +65,7 @@ impl<
     ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Foldable<'t, ReqIn, ReqOut, ReqF1>,
-> Foldable<'t, ReqIn, ReqOut, ReqF1> for ResultT<TInner, E>
+> Foldable<'t, ReqIn, ReqOut, ReqF1> for ResultT<E, TInner>
 {
     fn fold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
@@ -107,7 +107,7 @@ impl<
     ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Rfoldable<'t, ReqIn, ReqOut, ReqF1>,
-> Rfoldable<'t, ReqIn, ReqOut, ReqF1> for ResultT<TInner, E>
+> Rfoldable<'t, ReqIn, ReqOut, ReqF1> for ResultT<E, TInner>
 {
     fn rfold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
@@ -143,7 +143,7 @@ impl<
 }
 
 impl<'t, E: 't, ReqIn: TypeGuard<'t>, TInner: Pure<'t, ReqIn>> Pure<'t, ReqIn>
-    for ResultT<TInner, E>
+    for ResultT<E, TInner>
 {
     fn pure<'a, A>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
@@ -165,7 +165,7 @@ impl<
     ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Applicative<'t, ReqIn, ReqOut, ReqF1>,
-> Applicative<'t, ReqIn, ReqOut, ReqF1> for ResultT<TInner, E>
+> Applicative<'t, ReqIn, ReqOut, ReqF1> for ResultT<E, TInner>
 {
     fn apply<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
@@ -192,52 +192,38 @@ impl<
     }
 }
 
-// impl<
-//     't,
-//     E: 't + Add<Output = E> + Clone,
-//     ReqIn: TypeGuard<'t>,
-//     ReqOut: TypeGuard<'t>,
-//     // TODO: Consider if cloning funcs should be [Copy]
-//     ReqF1: OneOf5Hkt<'t>,
-//     TInner: Monad<'t, ReqIn, ReqOut, ReqF1> + Foldable<'t, ReqIn, ReqOut, ReqF1> + CloneK<'t, ReqOut>
-// > Monad<'t, ReqIn, ReqOut, ReqF1> for ResultT<TInner, E>
-// {
-//     fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-//         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-//         clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
-//         fa: Self::F<'a, A>,
-//         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
-//     ) -> Self::F<'a, B>
-//     where
-//         A: 'a,
-//         B: 'a,
-//         F1Once: 'a + FnOnce(A) -> Self::F<'a, B>,
-//         F1Mut: 'a + FnMut(A) -> Self::F<'a, B>,
-//         F1Fn: 'a + Fn(A) -> Self::F<'a, B>,
-//         F1Clone: 'a + Fn(A) -> Self::F<'a, B> + Clone,
-//         F1Copy: 'a + Fn(A) -> Self::F<'a, B> + Copy,
-//         't: 'a,
-//     {
-//         match fa {
-//             Ok(ta) => {
-//                 let nested = TInner::map(
-//                     clone_a.clone(),
-//                     |res| match res.as_ref() {
-//                         Ok(tb) => Ok(
-//                             TInner::clone(clone_b.clone(), tb)
-//                         ),
-//                         Err(e) => e.clone(),
-//                     },
-//                     f,
-//                     ta
-//                 )
-
-
-//             },
-//             Err(e) => Err(e),
-//         }
-//     }
-// }
+impl<
+    't,
+    E: 't + Add<Output = E> + Clone,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
+    // TODO: Consider if cloning funcs should be [Copy]
+    ReqF1: OneOf5Hkt<'t>,
+> Monad<'t, ReqIn, ReqOut, ReqF1> for ResultT<E>
+{
+    fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
+        fa: Self::F<'a, A>,
+        f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
+    ) -> Self::F<'a, B>
+    where
+        A: 'a,
+        B: 'a,
+        F1Once: 'a + FnOnce(A) -> Self::F<'a, B>,
+        F1Mut: 'a + FnMut(A) -> Self::F<'a, B>,
+        F1Fn: 'a + Fn(A) -> Self::F<'a, B>,
+        F1Clone: 'a + Fn(A) -> Self::F<'a, B> + Clone,
+        F1Copy: 'a + Fn(A) -> Self::F<'a, B> + Copy,
+        't: 'a,
+    {
+        match_one_of_5!(
+            ReqF1::into_one_of_5_enum(f),
+            f,
+            fa.and_then(f)
+        )
+    }
+}
 
 impl<
     't,
@@ -246,7 +232,7 @@ impl<
     ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Traversable<'t, ReqIn, ReqOut, ReqF1> + CloneK<'t, ReqOut>,
-> Traversable<'t, ReqIn, ReqOut, ReqF1> for ResultT<TInner, E>
+> Traversable<'t, ReqIn, ReqOut, ReqF1> for ResultT<E, TInner>
 {
     fn traverse<'a, A, B, F, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
@@ -302,7 +288,7 @@ impl<
     }
 }
 
-impl<'t, E: 't, TInner: CovariantK<'t>> CovariantK<'t> for ResultT<TInner, E> {
+impl<'t, E: 't, TInner: CovariantK<'t>> CovariantK<'t> for ResultT<E, TInner> {
     fn covariant_convert<'a, 'b, A>(a: Self::F<'a, A>) -> Self::F<'b, A>
     where
         A: 'a,
@@ -314,7 +300,7 @@ impl<'t, E: 't, TInner: CovariantK<'t>> CovariantK<'t> for ResultT<TInner, E> {
 }
 
 impl<'t, E: 't + Clone, ReqIn: TypeGuard<'t>, TInner: CloneOwnedK<'t, ReqIn>> CloneOwnedK<'t, ReqIn>
-    for ResultT<TInner, E>
+    for ResultT<E, TInner>
 {
     fn clone_owned<'a, 'b, A>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'b, A> + Clone,
@@ -331,7 +317,7 @@ impl<'t, E: 't + Clone, ReqIn: TypeGuard<'t>, TInner: CloneOwnedK<'t, ReqIn>> Cl
     }
 }
 
-impl<'t, E: 't + Clone, ReqIn: TypeGuard<'t>, TInner: CloneK<'t, ReqIn>> CloneK<'t, ReqIn> for ResultT<TInner, E> {
+impl<'t, E: 't + Clone, ReqIn: TypeGuard<'t>, TInner: CloneK<'t, ReqIn>> CloneK<'t, ReqIn> for ResultT<E, TInner> {
     fn clone<'a, A>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
         a: &Self::F<'a, A>,

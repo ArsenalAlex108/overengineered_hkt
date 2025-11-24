@@ -7,7 +7,7 @@ use tap::Pipe;
 
 use crate::{
     hkt::{
-        Applicative, CloneK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, IntoEither,
+        Applicative, CloneK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, IntoConverged,
         Monad, Pure, TCloneableOf5, Traversable, UnsizedHkt,
         UnsizedHktUnsized, boxed::BoxT, id::IdHkt, one_of::NotT5of5,
     },
@@ -277,13 +277,18 @@ impl<
             // Remove this step when copying to Vec
             .pipe(|f| map_one_of_5_with!(ReqF1, f, |mut f| move |a| f(a).collect::<Vec<_>>()));
 
-        let f = ReqF1::clone_one_of_5(&f);
+        let f_tag = ReqF1::create_from(&f, ());
+
+        // This compiles
+        // let f = ReqF1::clone_one_of_5(&f);
 
         // TODO: Cannot type check for some reason
         // let f_clone = CloneWrapper(f, |f: &_| ReqF1::clone_one_of_5(f));
 
         // So some runtime overhead
         let f_clone = std::rc::Rc::new(f);
+        
+        let f_tag = CloneWrapper(f_tag, |f: &_| ReqF1::clone_one_of_5(f));
 
         fa.flat_map(move |a: <TInner as Hkt<'t>>::F<'a, A>| {
             let clone_b2 = clone_b.clone();
@@ -302,7 +307,7 @@ impl<
                 a,
             );
 
-            let f_clone2 = f_clone.clone();
+            let f_tag = f_tag.clone();
             let sum = TInner::fold_while(
                 {
                     let clone_b = clone_b.clone();
@@ -329,7 +334,7 @@ impl<
                         move |mut sum: Vec<<TInner>::F<'a, B>>, next: Vec<<TInner>::F<'a, B>>| {
                             // Moved the reduce here:
                             let next = next.into_iter().reduce({
-                                let f_clone3 = f_clone2.clone();
+                                let f_tag = f_tag.clone();
                                 {
                                     let clone_b = clone_b.clone();
                                     move |sum, b| {
@@ -342,7 +347,7 @@ impl<
                                             clone_b.clone(),
                                             clone_b.clone(),
                                             sum,
-                                            ReqF1::create_from(&*f_clone3, move |_| b.clone().0)
+                                            ReqF1::create_from(&f_tag.0, move |_| b.clone().0)
                                                 .pipe(|f| {
                                                     ReqF1::arbitrary_t5(
                                                         f,
@@ -378,7 +383,7 @@ impl<
                 Vec::with_capacity(TInner::size_hint(&nested).0.saturating_add(1)),
                 nested,
             )
-            .into_either();
+            .into_converged();
 
             sum
             // Don't flatten - flat_map reduce instead

@@ -6,9 +6,7 @@ use std::{
 
 use tap::Pipe;
 
-use crate::{
-    TyEq
-};
+use crate::marker_classification::TyEq;
 
 union TransmuteUnion<A, B> {
     a: ManuallyDrop<A>,

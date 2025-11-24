@@ -14,9 +14,8 @@ use crate::hkt::{
     Applicative, CloneFnHkt, CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Monad,
     Pure, PureMapInner, Rfoldable, Traversable, UnsizedHkt, UnsizedHktUnsized,
 };
-use crate::marker_classification::{ConstBool, TypeGuard};
+use crate::marker_classification::{ConstBool, TypeGuard, TyEq};
 use crate::{
-    TyEq,
     hkt::{Hkt, HktUnsized, id::IdHkt},
 };
 

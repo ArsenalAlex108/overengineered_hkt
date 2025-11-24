@@ -7,7 +7,7 @@ use tap::Pipe;
 
 use crate::{
     hkt::{
-        Applicative, CloneK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, IntoEither, Monad, Pure, TCloneableOf5, Traversable, UnsizedHkt, UnsizedHktUnsized, boxed::BoxT, hkt_classification::{self, HktClassification}, id::IdHkt, one_of::NotT5of5
+        Applicative, CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, IntoConverged, Monad, Pure, Rfoldable, TCloneableOf5, Traversable, UnsizedHkt, UnsizedHktUnsized, boxed::BoxT, hkt_classification::{self, HktClassification}, id::IdHkt, one_of::NotT5of5
     },
     marker_classification::{AssertBlankOutput, ConstBool, TypeGuard},
     utils::CloneWrapper,
@@ -113,47 +113,46 @@ impl<
     }
 }
 
-// Oops
-// impl<
-//     't,
-//     ReqIn: TypeGuard<'t> + CloneK<'t>,
-//     ReqOut: TypeGuard<'t> + CloneK<'t>,
-//     ReqF1: OneOf5Hkt<'t> + TCloneableOf5<'t>,
-//     TInner: Rfoldable<'t, ReqIn, ReqOut, ReqF1>,
-// > Rfoldable<'t, ReqIn, ReqOut, ReqF1> for VecT<TInner>
-// {
-//     fn rfold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-//         clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
-//         clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
-//         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
-//         init: B,
-//         mut fb: Self::F<'a, A>,
-//     ) -> FoldWhile<B>
-//     where
-//         A: 'a,
-//         B: 'b,
-//         F1Once: 'f + FnOnce(B, A) -> FoldWhile<B>,
-//         F1Mut: 'f + FnMut(B, A) -> FoldWhile<B>,
-//         F1Fn: 'f + Fn(B, A) -> FoldWhile<B>,
-//         F1Clone: 'f + Fn(B, A) -> FoldWhile<B> + Clone,
-//         F1Copy: 'f + Fn(B, A) -> FoldWhile<B> + Copy,
-//         'a: 'f,
-//         'b: 'f,
-//         't: 'a + 'b,
-//     {
-//         let f = ReqF1::arbitrary_uncloneable(f, PhantomData::<fn(B, A) -> FoldWhile<B>>);
+impl<
+    't,
+    ReqIn: TypeGuard<'t> + CloneK<'t>,
+    ReqOut: TypeGuard<'t> + CloneK<'t>,
+    ReqF1: OneOf5Hkt<'t> + TCloneableOf5<'t>,
+    TInner: Rfoldable<'t, ReqIn, ReqOut, ReqF1>,
+> Rfoldable<'t, ReqIn, ReqOut, ReqF1> for VecT<TInner>
+{
+    fn rfold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
+        clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
+        f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
+        init: B,
+        mut fb: Self::F<'a, A>,
+    ) -> FoldWhile<B>
+    where
+        A: 'a,
+        B: 'b,
+        F1Once: 'f + FnOnce(B, A) -> FoldWhile<B>,
+        F1Mut: 'f + FnMut(B, A) -> FoldWhile<B>,
+        F1Fn: 'f + Fn(B, A) -> FoldWhile<B>,
+        F1Clone: 'f + Fn(B, A) -> FoldWhile<B> + Clone,
+        F1Copy: 'f + Fn(B, A) -> FoldWhile<B> + Copy,
+        'a: 'f,
+        'b: 'f,
+        't: 'a + 'b,
+    {
+        let f = ReqF1::arbitrary_uncloneable(f, PhantomData::<fn(B, A) -> FoldWhile<B>>);
 
-//         fb.try_fold(init, move |b, ka| {
-//             TInner::rfold_while(
-//                 clone_a.clone(),
-//                 clone_b.clone(),
-//                 ReqF1::clone_one_of_5(&f),
-//                 b,
-//                 ka,
-//             )
-//         })
-//     }
-// }
+        fb.into_iter().try_fold(init, move |b, ka| {
+            TInner::rfold_while(
+                clone_a.clone(),
+                clone_b.clone(),
+                ReqF1::clone_one_of_5(&f),
+                b,
+                ka,
+            )
+        })
+    }
+}
 
 impl<'t, ReqIn: TypeGuard<'t>, TInner: Pure<'t, ReqIn>> Pure<'t, ReqIn>
     for VecT<TInner>
@@ -242,6 +241,7 @@ impl<
     }
 }
 
+/// TODO: test
 impl<
     't,
     ReqIn: TypeGuard<'t>,
@@ -271,13 +271,18 @@ impl<
     {
         let f = ReqF1::arbitrary_uncloneable(f, PhantomData::<fn(A) -> Self::F<'a, B>>);
 
-        let f = ReqF1::clone_one_of_5(&f);
+        let f_tag = ReqF1::create_from(&f, ());
+
+        // This compiles
+        // let f = ReqF1::clone_one_of_5(&f);
 
         // TODO: Cannot type check for some reason
         // let f_clone = CloneWrapper(f, |f: &_| ReqF1::clone_one_of_5(f));
 
         // So some runtime overhead
         let f_clone = std::rc::Rc::new(f);
+        
+        let f_tag = CloneWrapper(f_tag, |f: &_| ReqF1::clone_one_of_5(f));
 
         fa.into_iter().flat_map(move |a: <TInner as Hkt<'t>>::F<'a, A>| {
             let clone_b2 = clone_b.clone();
@@ -296,7 +301,7 @@ impl<
                 a,
             );
 
-            let f_clone2 = f_clone.clone();
+            let f_tag = f_tag.clone();
             let sum = TInner::fold_while(
                 {
                     let clone_b = clone_b.clone();
@@ -323,20 +328,20 @@ impl<
                         move |mut sum: Vec<<TInner>::F<'a, B>>, next: Vec<<TInner>::F<'a, B>>| {
                             // Moved the reduce here:
                             let next = next.into_iter().reduce({
-                                let f_clone3 = f_clone2.clone();
+                                let f_tag = f_tag.clone();
                                 {
                                     let clone_b = clone_b.clone();
                                     move |sum, b| {
-                                        let value = clone_b.clone();
+                                        let clone_b2 = clone_b.clone();
                                         let b = CloneWrapper(b, move |b: &TInner::F<'a, B>| {
-                                            TInner::clone(value.clone(), b)
+                                            TInner::clone(clone_b2.clone(), b)
                                         });
 
                                         TInner::bind(
                                             clone_b.clone(),
                                             clone_b.clone(),
                                             sum,
-                                            ReqF1::create_from(&*f_clone3, move |_| b.clone().0)
+                                            ReqF1::create_from(&f_tag.0, move |_| b.clone().0)
                                                 .pipe(|f| {
                                                     ReqF1::arbitrary_t5(
                                                         f,
@@ -372,7 +377,7 @@ impl<
                 Vec::with_capacity(TInner::size_hint(&nested).0.saturating_add(1)),
                 nested,
             )
-            .into_either();
+            .into_converged();
 
             sum
             // Don't flatten - flat_map reduce instead
@@ -561,5 +566,33 @@ impl<'t, TInner: CovariantK<'t>> CovariantK<'t> for VecT<TInner> {
         't: 'a + 'b,
     {
         a.into_iter().map(TInner::covariant_convert).collect::<Vec<_>>()
+    }
+}
+
+impl<'t, ReqIn: TypeGuard<'t>, TInner: CloneOwnedK<'t, ReqIn>> CloneOwnedK<'t, ReqIn>
+    for VecT<TInner>
+{
+    fn clone_owned<'a, 'b, A>(
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'b, A> + Clone,
+        a: &Self::F<'a, A>,
+    ) -> Self::F<'b, A>
+    where
+        A: 'a + 'b,
+        't: 'a + 'b,
+    {
+        a.iter().map(|ta| TInner::clone_owned(clone_a.clone(), ta)).collect::<Vec<_>>()
+    }
+}
+
+impl<'t, ReqIn: TypeGuard<'t>, TInner: CloneK<'t, ReqIn>> CloneK<'t, ReqIn> for VecT<TInner> {
+    fn clone<'a, A>(
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        a: &Self::F<'a, A>,
+    ) -> Self::F<'a, A>
+    where
+        A: 'a,
+        't: 'a,
+    {
+        a.iter().map(|ta| TInner::clone(clone_a.clone(), ta)).collect::<Vec<_>>()
     }
 }
