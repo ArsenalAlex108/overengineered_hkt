@@ -20,13 +20,10 @@ pub mod id;
 pub mod iter;
 #[cfg(false)]
 pub(crate) mod laws;
-#[cfg(false)]
 pub mod option;
 pub mod reference;
 #[cfg(false)]
 pub mod extensions;
-
-#[cfg(false)]
 pub mod result;
 pub mod slice;
 pub mod sync;

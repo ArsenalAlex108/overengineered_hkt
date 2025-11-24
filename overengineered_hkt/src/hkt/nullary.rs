@@ -1,10 +1,10 @@
 use std::convert::Infallible;
 
-use crate::hkt::{
+use crate::{hkt::{
     CloneK, CloneOwnedK, CovariantK, Functor, Hkt, PhantomMarker, UnsizedHkt, UnsizedHktUnsized,
     hkt_classification::{self, HktClassification},
     one_of::OneOf5Hkt,
-};
+}, marker_classification::TypeGuard};
 
 /// A Hkt wrapper around `T` that is not actually higher kinded over anything.
 pub struct NullaryHkt<T = ()>(Infallible, PhantomMarker<T>);
@@ -34,12 +34,12 @@ impl<T> HktClassification for NullaryHkt<T> {
     type Choice = hkt_classification::TransparentHkt;
 }
 
-impl<'t, T: 't, ReqIn: Hkt<'t>, ReqOut: Hkt<'t>, ReqF1: OneOf5Hkt<'t>>
+impl<'t, T: 't, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>
     Functor<'t, ReqIn, ReqOut, ReqF1> for NullaryHkt<T>
 {
     fn map<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         fa: Self::F<'a, A>,
     ) -> Self::F<'a, B>
@@ -66,8 +66,8 @@ impl<'t, T: 't, ReqIn: Hkt<'t>, ReqOut: Hkt<'t>, ReqF1: OneOf5Hkt<'t>>
 //     }
 // }
 
-impl<'t, T: 't + Clone, ReqIn: Hkt<'t>> CloneK<'t, ReqIn> for NullaryHkt<T> {
-    fn clone<'a, A>(in_requirement: ReqIn::F<'a, A>, a: &Self::F<'a, A>) -> Self::F<'a, A>
+impl<'t, T: 't + Clone, ReqIn: TypeGuard<'t>> CloneK<'t, ReqIn> for NullaryHkt<T> {
+    fn clone<'a, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a,
@@ -76,8 +76,8 @@ impl<'t, T: 't + Clone, ReqIn: Hkt<'t>> CloneK<'t, ReqIn> for NullaryHkt<T> {
     }
 }
 
-impl<'t, T: 't + Clone, ReqIn: Hkt<'t>> CloneOwnedK<'t, ReqIn> for NullaryHkt<T> {
-    fn clone_owned<'a, 'b, A>(in_requirement: ReqIn::F<'a, A>, a: &Self::F<'a, A>) -> Self::F<'b, A>
+impl<'t, T: 't + Clone, ReqIn: TypeGuard<'t>> CloneOwnedK<'t, ReqIn> for NullaryHkt<T> {
+    fn clone_owned<'a, 'b, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'b, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'b, A>
     where
         A: 'a + 'b,
         't: 'a + 'b,

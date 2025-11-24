@@ -22,6 +22,7 @@ use crate::{
         nullary::NullaryHkt,
         one_of::{NotT1of5, NotT2of5, NotT3of5, OneOf5Hkt, T1Of5Hkt},
     },
+    marker_classification::{AssertBlankOutput, ConstBool, TypeGuard, TypeGuardK},
     transmute::unsafe_transmute_id,
     utils::CloneWrapper,
 };
@@ -84,63 +85,64 @@ pub trait Hkt<'t>: UnsizedHkt<'t> {
 //     fn as_ref_newtype<'a, 'b, A: 'a>(a: &Self::F<'a, 'b, (), A>) -> &Self::F<'a, 'b, (), A>;
 // }
 
-#[cfg(false)]
-pub trait HktTransformer {
-    // Original
-    // type F<'t, TInner: Hkt>: Hkt;
+// /// Relic
+// #[cfg(false)]
+// pub(crate) trait HktTransformer {
+//     // Original
+//     // type F<'t, TInner: Hkt>: Hkt;
 
-    // F, TInner: HktTransformer
-    // F::F<TInner::F<()>>::<A> != F::F<IdT::F<TInner::F<()>>>::<A> because of opaque F -> This can be proven with a conversion function
-    // Our injection must work with opaque types
+//     // F, TInner: HktTransformer
+//     // F::F<TInner::F<()>>::<A> != F::F<IdT::F<TInner::F<()>>>::<A> because of opaque F -> This can be proven with a conversion function
+//     // Our injection must work with opaque types
 
-    // Equality and transformation method:
-    // A: TyEq<B>
-    // (Fa::F<A>) -> Fb::F<A>
+//     // Equality and transformation method:
+//     // A: TyEq<B>
+//     // (Fa::F<A>) -> Fb::F<A>
 
-    // Abstract => Implement nothing
-    type F<'t, TNewtype: HktTransformer, TInner: Hkt>: Hkt;
+//     // Abstract => Implement nothing
+//     type F<'t, TNewtype: HktTransformer, TInner: Hkt>: Hkt;
 
-    // Concrete => implement something
-    fn into_concrete<'t, TNewtype: HktTransformer, TInner: Hkt>(
-        a: Self::F<'t, TNewtype, TInner>,
-    ) -> TNewtype::F<'t, Self::F<'t, (), TInner>, TInner>;
-}
+//     // Concrete => implement something
+//     fn into_concrete<'t, TNewtype: HktTransformer, TInner: Hkt>(
+//         a: Self::F<'t, TNewtype, TInner>,
+//     ) -> TNewtype::F<'t, Self::F<'t, (), TInner>, TInner>;
+// }
 
-#[cfg(false)]
-pub type IdTTransformer = ();
+// #[cfg(false)]
+// pub(crate) type IdTTransformer = ();
 
-#[cfg(false)]
-impl HktTransformer for IdTTransformer {
-    type F<'t, TNewtype: HktTransformer, TInner: Hkt> = TInner;
+// #[cfg(false)]
+// impl HktTransformer for IdTTransformer {
+//     type F<'t, TNewtype: HktTransformer, TInner: Hkt> = TInner;
 
-    fn into_concrete<'t, TNewtype: HktTransformer, TInner: Hkt>(
-        a: Self::F<'t, TNewtype, TInner>,
-    ) -> TNewtype::F<'t, Self::F<'t, (), TInner>, TInner> {
-        todo!()
-    }
-}
+//     fn into_concrete<'t, TNewtype: HktTransformer, TInner: Hkt>(
+//         a: Self::F<'t, TNewtype, TInner>,
+//     ) -> TNewtype::F<'t, Self::F<'t, (), TInner>, TInner> {
+//         todo!()
+//     }
+// }
 
-#[cfg(false)]
-fn run<'t, F: HktTransformer, A: 'a>(
-    a: <F::F<'t, (), ()>>::F<'t, A>,
-) -> <F::F<'t, (), ()>>::F<'t, A> {
-    fn run_s() {
-        let x = run::<(), ()>(());
-    }
+// #[cfg(false)]
+// fn run<'t, F: HktTransformer, A: 'a>(
+//     a: <F::F<'t, (), ()>>::F<'t, A>,
+// ) -> <F::F<'t, (), ()>>::F<'t, A> {
+//     fn run_s() {
+//         let x = run::<(), ()>(());
+//     }
 
-    a
-}
+//     a
+// }
 
-#[cfg(false)]
-pub struct VecTTransformer(Infallible);
+// #[cfg(false)]
+// pub struct VecTTransformer(Infallible);
 
-// Vec<Arc<A>> == (Id)<Vec<(Id)<Arc<A>>>> => D<Fa<D<Fb<A>>>>
-// VecT<ArcT>::<A> == IdT<VecT<IdT<ArcT>>>::<A> => DT<VecT<DT<ArcT>>>::<A>
-// Way to say 2 stacks are transmutable
-#[cfg(false)]
-impl HktTransformer for VecTTransformer {
-    type F<'t, TNewtype: HktTransformer, TInner: Hkt> = VecT<TNewtype::F<'t, (), TInner>>;
-}
+// // Vec<Arc<A>> == (Id)<Vec<(Id)<Arc<A>>>> => D<Fa<D<Fb<A>>>>
+// // VecT<ArcT>::<A> == IdT<VecT<IdT<ArcT>>>::<A> => DT<VecT<DT<ArcT>>>::<A>
+// // Way to say 2 stacks are transmutable
+// #[cfg(false)]
+// impl HktTransformer for VecTTransformer {
+//     type F<'t, TNewtype: HktTransformer, TInner: Hkt> = VecT<TNewtype::F<'t, (), TInner>>;
+// }
 
 pub trait UnsizedHktUnsized<'t>:
     // TODO:
@@ -196,9 +198,10 @@ impl<'t, T: HktUnsized<'t> + HktClassification<Choice = hkt_classification::Oute
 //     fn into_try_result(self) -> Result<Self::T, Self::E>;
 // }
 
-pub trait UnwrapEither {
+/// Converts enum with all variants being T into T
+pub trait IntoEither {
     type T;
-    fn unwrap_either(self) -> Self::T;
+    fn into_either(self) -> Self::T;
 }
 
 // impl<'t, T, E> IntoTryResultExt for TryFlow<T, E> {
@@ -230,10 +233,10 @@ pub trait UnwrapEither {
 //     }
 // }
 
-impl<T> UnwrapEither for FoldWhile<T> {
+impl<T> IntoEither for FoldWhile<T> {
     type T = T;
 
-    fn unwrap_either(self) -> Self::T {
+    fn into_either(self) -> Self::T {
         match self {
             ControlFlow::Continue(t) => t,
             ControlFlow::Break(t) => t,
@@ -241,9 +244,9 @@ impl<T> UnwrapEither for FoldWhile<T> {
     }
 }
 
-impl<T> UnwrapEither for Result<T, T> {
+impl<T> IntoEither for Result<T, T> {
     type T = T;
-    fn unwrap_either(self) -> T {
+    fn into_either(self) -> T {
         match self {
             Ok(t) => t,
             Err(t) => t,
@@ -477,14 +480,21 @@ mod s {
 /// `F1` usually needs cloning.
 pub trait Functor<
     't,
-    ReqIn: Hkt<'t> = NullaryHkt,
-    ReqOut: Hkt<'t> = NullaryHkt,
-    ReqF1: OneOf5Hkt<'t> = T1Of5Hkt,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
+    ReqF1: OneOf5Hkt<'t>,
 >: Hkt<'t>
 {
+    // Clone-agnostic => clone transitivity proof:
+    // If not Clone => Use cloneless
+    // If Clone => Use Clone or cloneless
+    // Op1: CloneFn method:
+    // If not Clone => call produces trash
+    // If Clone => call produce cloned
+    // If unknown => match
     fn map<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         f: ReqF1::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         fa: Self::F<'a, A>,
     ) -> Self::F<'a, B>
@@ -520,22 +530,46 @@ pub trait Functor<
     //     F1: Fn(A) -> FoldWhile<B> + Clone;
 }
 
-fn fn_to_fn_clone(f: impl Fn(i32) -> i32) -> impl Fn(i32) -> i32 + Clone {
-    let f = std::rc::Rc::new(f);
-    move |i| f(i)
+// Trait bound not satisfied: somehow not exhaustive
+// fn may_clone<'a, 't, const CLONE: bool, A: 'a>(a: A, a_fn: impl Fn(&A) -> <ConstBool<CLONE> as TypeGuard<'t>>::Output<'a, A>) -> (A, Option<A>) {
+//     (a, None)
+// }
+
+// Ok - working exampl
+fn may_clone<'a, 't, CloneA: TypeGuard<'t>, A: 'a>(
+    a: A,
+    a_fn: impl Fn(&A) -> CloneA::Output<'a, A> + Copy,
+) -> (A, Option<A>)
+where
+    't: 'a,
+{
+    match CloneA::match_guard(a_fn(&a)) {
+        Ok(a2) => {
+            let _ = may_clone::<ConstBool<true>, A>(
+                CloneA::match_guard(a_fn(&a)).ok().expect("Guaranteed to be Ok here"),
+                |ra| {
+                    CloneA::match_guard(a_fn.clone()(ra))
+                        .ok()
+                        .expect("Ok here too")
+                },
+            );
+            (a, Some(a2))
+        }
+        Err(_) => (a, None),
+    }
 }
 
 /// `F1` usually needs cloning.
 pub trait Cofunctor<
     't,
-    ReqIn: Hkt<'t> = NullaryHkt,
-    ReqOut: Hkt<'t> = NullaryHkt,
-    ReqF1: OneOf5Hkt<'t> = T1Of5Hkt,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
+    ReqF1: OneOf5Hkt<'t>,
 >: Hkt<'t>
 {
     fn comap<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         f: ReqF1::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         fa: Self::F<'a, B>,
     ) -> Self::F<'a, A>
@@ -591,15 +625,14 @@ pub type FoldWhile<T> = ControlFlow<T, T>;
 /// `F1` usually needs cloning.
 pub trait Foldable<
     't,
-    ReqIn: Hkt<'t> = NullaryHkt,
-    ReqOut: Hkt<'t> = NullaryHkt,
-    ReqF1: OneOf5Hkt<'t> = T1Of5Hkt,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
+    ReqF1: OneOf5Hkt<'t>,
 >: Hkt<'t>
 {
     fn fold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        // TODO: Fix lifetime?
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
         fb: Self::F<'a, A>,
@@ -615,7 +648,6 @@ pub trait Foldable<
         'a: 'f,
         'b: 'f,
         't: 'a + 'b;
-
 
     /*
     fn extend<'a, 'b, 'f, A, F, E>(
@@ -644,47 +676,51 @@ pub trait Foldable<
      */
 
     /// Extend a collection implementing [Extend] with elements of this [Foldable].
-    fn extend<'a, 'b, 'f, A, E>(
-        in_requirement: ReqIn::F<'a, A>,
-        // TODO: Fix lifetime?
-        out_requirement: ReqOut::F<'a, &'b mut E>,
+    fn extend<'a, 'e, 'f, A, E>(
+        clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
         tag: ReqF1::OneOf5F<'f, impl Sized, impl Sized, impl Sized, impl Sized, impl Sized>,
-        collection: &'b mut E,
+        collection: &'e mut E,
         fb: Self::F<'a, A>,
-    ) -> &'b mut E
+    ) -> &'e mut E
     where
+        Self: Foldable<'t, ReqIn, ConstBool<false>, ReqF1>,
         A: 'a,
-        E: 'b + Extend<A>,
+        E: 'e + Extend<A>,
         'a: 'f,
-        'b: 'f,
-        't: 'a + 'b,
+        'e: 'f,
+        't: 'a + 'e,
     {
-        let tag = ReqF1::create_from(&tag, |sum: &'b mut E, a: A| {
+        let tag = ReqF1::create_from(&tag, |sum: &'e mut E, a: A| {
             sum.extend(std::iter::once(a));
-            ControlFlow::Continue(sum)
+            FoldWhile::Continue(sum)
         });
 
-        Self::fold_while(in_requirement, out_requirement, tag, collection, fb).unwrap_either()
+        <Self as Foldable<'t, ReqIn, ConstBool<false>, ReqF1>>::fold_while::<A, &'e mut E, _, _, _, _, _>(clone_a, |_| AssertBlankOutput, tag, collection, fb).into_either()
     }
 
     /// Hkt version of [Iterator::size_hint]
     #[allow(unused_variables)]
-    fn size_hint<'a, A>(s: &Self::F<'a, A>) -> (usize, Option<usize>) where 't: 'a {
+    fn size_hint<'a, A>(s: &Self::F<'a, A>) -> (usize, Option<usize>)
+    where
+        't: 'a,
+    {
         (0, None)
     }
 }
 
+
+
 /// `F1` usually needs cloning.
 pub trait Rfoldable<
     't,
-    ReqIn: Hkt<'t> = NullaryHkt,
-    ReqOut: Hkt<'t> = NullaryHkt,
-    ReqF1: OneOf5Hkt<'t> = T1Of5Hkt,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
+    ReqF1: OneOf5Hkt<'t>,
 >: Hkt<'t>
 {
     fn rfold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
         fb: Self::F<'a, A>,
@@ -702,8 +738,8 @@ pub trait Rfoldable<
         't: 'a + 'b;
 }
 
-pub trait Pure<'t, ReqIn: Hkt<'t> = NullaryHkt>: Hkt<'t> {
-    fn pure<'a, A>(in_requirement: ReqIn::F<'a, A>, a: A) -> Self::F<'a, A>
+pub trait Pure<'t, ReqIn: TypeGuard<'t>>: Hkt<'t> {
+    fn pure<'a, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, a: A) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a;
@@ -712,14 +748,14 @@ pub trait Pure<'t, ReqIn: Hkt<'t> = NullaryHkt>: Hkt<'t> {
 /// `A` and `F1` usually needs cloning.
 pub trait Applicative<
     't,
-    ReqIn: Hkt<'t> = NullaryHkt,
-    ReqOut: Hkt<'t> = NullaryHkt,
-    ReqF1: OneOf5Hkt<'t> = T1Of5Hkt,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
+    ReqF1: OneOf5Hkt<'t>,
 >: Functor<'t, ReqIn, ReqOut, ReqF1> + Pure<'t, ReqIn>
 {
     fn apply<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         ff: Self::F<'a, ReqF1::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>>,
         fa: Self::F<'a, A>,
     ) -> Self::F<'a, B>
@@ -737,14 +773,14 @@ pub trait Applicative<
 /// `B` and `F1` usually needs cloning.
 pub trait Monad<
     't,
-    ReqIn: Hkt<'t> = NullaryHkt,
-    ReqOut: Hkt<'t> = NullaryHkt,
-    ReqF1: OneOf5Hkt<'t> = T1Of5Hkt,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
+    ReqF1: OneOf5Hkt<'t>,
 >: Applicative<'t, ReqIn, ReqOut, ReqF1>
 {
     fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         fa: Self::F<'a, A>,
         f: ReqF1::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
     ) -> Self::F<'a, B>
@@ -759,15 +795,16 @@ pub trait Monad<
         't: 'a;
 }
 
-pub trait MonadT<
+/// TODO
+pub(crate) trait MonadT<
     't,
     M: Monad<'t, ReqIn, ReqOut, ReqF1>,
-    ReqIn: Hkt<'t> = NullaryHkt,
-    ReqOut: Hkt<'t> = NullaryHkt,
-    ReqF1: OneOf5Hkt<'t> = T1Of5Hkt,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
+    ReqF1: OneOf5Hkt<'t>,
 >: Monad<'t, ReqIn, ReqOut, ReqF1>
 {
-    fn lift<'a, A>(in_requirement: ReqIn::F<'a, A>, ma: M::F<'a, A>) -> Self::F<'a, A>
+    fn lift<'a, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, ma: M::F<'a, A>) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a;
@@ -776,14 +813,14 @@ pub trait MonadT<
 /// `B`, `F1` and `F` usually needs cloning.
 pub trait Traversable<
     't,
-    ReqIn: Hkt<'t> = NullaryHkt,
-    ReqOut: Hkt<'t> = NullaryHkt,
-    ReqF1: OneOf5Hkt<'t> = T1Of5Hkt,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
+    ReqF1: OneOf5Hkt<'t>,
 >: Functor<'t, ReqIn, ReqOut, ReqF1> + Foldable<'t, ReqIn, ReqOut, ReqF1>
 {
     fn traverse<'a, A, B, F, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         f: ReqF1::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         fa: Self::F<'a, A>,
     ) -> F::F<'a, Self::F<'a, B>>
@@ -795,7 +832,7 @@ pub trait Traversable<
         F1Fn: 'a + Fn(A) -> F::F<'a, B>,
         F1Clone: 'a + Fn(A) -> F::F<'a, B> + Clone,
         F1Copy: 'a + Fn(A) -> F::F<'a, B> + Copy,
-        F: Applicative<'t, ReqIn, ReqOut, ReqF1>,
+        F: Applicative<'t, ReqIn, ReqOut, ReqF1> + Functor<'t, ReqIn, ConstBool<false>, ReqF1>,
         't: 'a;
 }
 
@@ -807,14 +844,14 @@ pub(crate) trait SemigroupK<'t>: Hkt<'t> {
 }
 
 /// TODO
-pub(crate) trait ChoiceK<'t>: Applicative<'t> + SemigroupK<'t> {
-    fn choose<'a, A: 'a>(a: Self::F<'a, A>, b: Self::F<'a, A>) -> Self::F<'a, A>
-    where
-        't: 'a;
-}
+// pub(crate) trait ChoiceK<'t>: Applicative<'t> + SemigroupK<'t> {
+//     fn choose<'a, A: 'a>(a: Self::F<'a, A>, b: Self::F<'a, A>) -> Self::F<'a, A>
+//     where
+//         't: 'a;
+// }
 
-/// TODO
-pub(crate) trait AlternativeK<'t>: ChoiceK<'t> + MonoidK<'t> {}
+// /// TODO
+// pub(crate) trait AlternativeK<'t>: ChoiceK<'t> + MonoidK<'t> {}
 
 /// TODO
 pub(crate) trait DefaultK<'t>: Hkt<'t> {
@@ -859,28 +896,53 @@ pub(crate) trait MonoidK<'t>: SemigroupK<'t> + DefaultK<'t> {}
 /// Convert reference into ownership with the same lifetime bound:
 /// - The bound could be from a reference to some shared resource
 /// - Other owned data could be cloned, including A
-pub trait CloneK<'t, ReqIn: Hkt<'t> = NullaryHkt>: Hkt<'t> {
+pub trait CloneK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output: TypeGuard<'t> = ConstBool<true>>: Hkt<'t> {
     /// = (&Self::F<'a, A>) => Self::F<'a, A> (Clone) + (Self::F<'a, A>) => Self::F<'t, A> (IntoOwned) + (Self::F<'t, A>) => Self::F<'a, A> (Covariance)
-    fn clone<'a, A>(in_requirement: ReqIn::F<'a, A>, a: &Self::F<'a, A>) -> Self::F<'a, A>
+    fn clone<'a, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a;
 }
 
-pub trait CloneApplicativeFn<'t, ReqF1: OneOf5Hkt<'t> + TCloneableOf5<'t>>: Hkt<'t> {
-    fn clone_applicative_func<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        fa: &Self::F<'a, ReqF1::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>>,
-    ) -> Self::F<'a, ReqF1::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>>
-    where
-        A: 'a,
-        B: 'a,
-        F1Once: 'a + FnOnce(A) -> B,
-        F1Mut: 'a + FnMut(A) -> B,
-        F1Fn: 'a + Fn(A) -> B,
-        F1Clone: 'a + Fn(A) -> B + Clone,
-        F1Copy: 'a + Fn(A) -> B + Copy,
-        't: 'a;
+// TODO
+#[cfg(false)]
+impl<'t, ReqIn: TypeGuard<'t>, T: Hkt<'t>> CloneK<'t, ReqIn, ConstBool<false>> for T {
+
 }
+
+/// Relic
+// pub trait CloneApplicativeFn<'t, ReqF1: OneOf5Hkt<'t> + TCloneableOf5<'t>>: Hkt<'t> {
+//     fn clone_applicative_func<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
+//         fa: &Self::F<'a, ReqF1::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>>,
+//     ) -> Self::F<'a, ReqF1::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>>
+//     where
+//         A: 'a,
+//         B: 'a,
+//         F1Once: 'a + FnOnce(A) -> B,
+//         F1Mut: 'a + FnMut(A) -> B,
+//         F1Fn: 'a + Fn(A) -> B,
+//         F1Clone: 'a + Fn(A) -> B + Clone,
+//         F1Copy: 'a + Fn(A) -> B + Copy,
+//         't: 'a;
+// }
+
+/// Similar to [CloneK] but can be set to arbitrary new lifetime
+pub trait CloneOwnedK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output: TypeGuard<'t> = ConstBool<true>>: Hkt<'t> {
+    fn clone_owned<'a, 'b, A>(
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'b, A> + Clone,
+        a: &Self::F<'a, A>,
+    ) -> Self::F<'b, A>
+    where
+        A: 'a + 'b,
+        't: 'a + 'b;
+}
+
+// TODO
+#[cfg(false)]
+impl<'t, ReqIn: TypeGuard<'t>, T: Hkt<'t>> CloneOwnedK<'t, ReqIn, ConstBool<false>> for T {
+
+}
+
 
 /// A trait alias to declare a better intention that the variant must be cloneable - along with a helper function.
 pub trait TCloneableOf5<'t>: NotT1of5<'t> + NotT2of5<'t> + NotT3of5<'t> {
@@ -906,17 +968,9 @@ pub trait TCloneableOf5<'t>: NotT1of5<'t> + NotT2of5<'t> + NotT3of5<'t> {
 
 impl<'t, T: NotT1of5<'t> + NotT2of5<'t> + NotT3of5<'t>> TCloneableOf5<'t> for T {}
 
-pub trait CloneOwnedK<'t, ReqIn: Hkt<'t> = NullaryHkt>: Hkt<'t> {
-    fn clone_owned<'a, 'b, A>(
-        in_requirement: ReqIn::F<'a, A>,
-        a: &Self::F<'a, A>,
-    ) -> Self::F<'b, A>
-    where
-        A: 'a + 'b,
-        't: 'a + 'b;
-}
 
-pub trait PureMapInner<'t, ReqIn: Hkt<'t> = NullaryHkt, F: Hkt<'t> = IdHkt>: Hkt<'t> {
+#[deprecated = "Unused"]
+pub(crate) trait PureMapInner<'t, ReqIn: Hkt<'t> = NullaryHkt, F: Hkt<'t> = IdHkt>: Hkt<'t> {
     fn pure_map_inner<'a, A>(
         in_requirement: ReqIn::F<'a, A>,
         s: Self::F<'a, A>,
@@ -937,6 +991,7 @@ pub trait CovariantK<'t>: Hkt<'t> {
         't: 'a + 'b;
 }
 
+#[deprecated = "Unused"]
 pub(crate) trait CovariantRefK<'t>: CovariantK<'t> {
     fn covariant_ref_cast<'r, 'a, 'b, A: 'a>(a: &'r Self::F<'a, A>) -> &'r Self::F<'b, A>
     where
@@ -944,13 +999,15 @@ pub(crate) trait CovariantRefK<'t>: CovariantK<'t> {
         't: 'r + 'a + 'b;
 }
 
-pub trait CloneFnHkt<'t>: Hkt<'t> {
+#[deprecated = "Unused"]
+pub(crate) trait CloneFnHkt<'t>: Hkt<'t> {
     fn call_clone<'a, A: 'a>(f: &Self::F<'a, A>, a: &A) -> A
     where
         't: 'a;
 }
 
-pub struct ClonePtrHkt(Infallible);
+#[deprecated = "Unused"]
+pub(crate) struct ClonePtrHkt(Infallible);
 
 impl<'t> Hkt<'t> for ClonePtrHkt {
     type F<'a, A: 'a>
@@ -963,12 +1020,11 @@ impl HktClassification for ClonePtrHkt {
     type Choice = hkt_classification::OuterHkt;
 }
 
-impl<'t, ReqIn: Hkt<'t>> CloneK<'t, ReqIn> for ClonePtrHkt {
-    fn clone<'a, A>(_: ReqIn::F<'a, A>, a: &Self::F<'a, A>) -> Self::F<'a, A>
+impl<'t, ReqIn: TypeGuard<'t>> CloneK<'t, ReqIn> for ClonePtrHkt {
+    fn clone<'a, A>(clone_a: impl Fn(&A) -> <ReqIn>::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
     where
         A: 'a,
-        't: 'a,
-    {
+        't: 'a {
         *a
     }
 }
@@ -999,16 +1055,17 @@ impl HktClassification for DynCloneFnHkt {
     type Choice = hkt_classification::OuterHkt;
 }
 
-impl<'t, ReqIn: Hkt<'t>> CloneK<'t, ReqIn> for DynCloneFnHkt {
-    fn clone<'a, A: 'a>(_: ReqIn::F<'a, A>, a: &Self::F<'a, A>) -> Self::F<'a, A>
+impl<'t, ReqIn: TypeGuard<'t>> CloneK<'t, ReqIn> for DynCloneFnHkt {
+    fn clone<'a, A>(clone_a: impl Fn(&A) -> <ReqIn>::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
     where
-        't: 'a,
-    {
+        A: 'a,
+        't: 'a {
         Arc::clone(a)
     }
 }
 
 /// Needs Deref & Pure: ((&A) -> A) -> (&F<A>) -> F<A>
+#[cfg(false)]
 impl<'t, ReqIn: Hkt<'t> + CloneK<'t>, F: DerefHkt<'t> + Pure<'t, ReqIn>> PureMapInner<'t, ReqIn, F>
     for DynCloneFnHkt
 {
@@ -1042,9 +1099,10 @@ impl<'t> CloneFnHkt<'t> for DynCloneFnHkt {
     }
 }
 
-struct CowT<K = IdHkt>(Infallible, PhantomData<K>);
+/// Example type
+pub(crate) struct CowT<K = IdHkt>(Infallible, PhantomData<K>);
 
-enum Borrown<'a, T> {
+pub(crate) enum Borrown<'a, T> {
     Borrow(&'a T),
     Own(T),
 }
@@ -1056,7 +1114,7 @@ impl<'t, K: Hkt<'t>> Hkt<'t> for CowT<K> {
         't: 'a;
 }
 
-impl<'t, K> HktClassification for CowT<K> {
+impl<K> HktClassification for CowT<K> {
     type Choice = hkt_classification::OuterHkt;
 }
 

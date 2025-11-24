@@ -31,10 +31,14 @@ pub trait IsConstBool: sealed::BaseSealed {
     const BOOL: bool;
 }
 
-#[derive(Debug)]
-#[must_use = "Unexpected attempt to call function with missing bounds on target type"]
-/// Used to block replace the output of a function to signal that the called type is missing bounds needed to call this function.
-pub struct MissingBoundAtCompileTimeError;
+#[derive(Debug, Default, Clone, Copy)]
+#[must_use = "Unexpected attempt to call no-op function with blank return type."]
+/// Used to replace/block the output of a function to signal that the output type is intentionally empty and calling the function is a no-op. Used as associated types in [TypeGuard] for [`ConstBool<false>`]
+pub struct AssertBlankOutput;
+
+/// Error returned calling [TypeGuard::try_create_guarded] when [TypeGuard] is [`ConstBool<true>`]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct TypeGuardWasConstBoolTrue;
 
 pub struct ConstBool<const VAL: bool>;
 
@@ -69,25 +73,124 @@ impl<T: Sync> IsSync<ConstBool<true>> for T {
     type Sealed = sealed::AssociatedKey;
 }
 
-// pub trait IsClone<Bool: IsConstBool + TypeGuard> {
+// pub trait IsClone<Bool: IsConstBool + TypeGuardK> {
 //     type Sealed: sealed::AssociatedSealed;
 
-//     fn protected_clone<'t>(a: &Self) -> <<Bool as TypeGuard>::OutputF<'t> as Hkt<'t>>::F<'t, Self>
+//     fn protected_clone<'t>(a: &Self) -> <<Bool as TypeGuardK>::OutputF<'t> as Hkt<'t>>::F<'t, Self>
 //     where
 //         Self: Sized;
 // }
 
-#[deprecated = "Unused for now."]
-pub trait TypeGuard: sealed::BaseSealed {
+/// (Unused) Higher-kinded version of [TypeGuard]
+pub(crate) trait TypeGuardK: sealed::BaseSealed {
     type OutputF<'t>: Hkt<'t>;
 }
 
-impl TypeGuard for ConstBool<false> {
-    type OutputF<'t> = NullaryHkt<MissingBoundAtCompileTimeError>;
+impl TypeGuardK for ConstBool<false> {
+    type OutputF<'t> = NullaryHkt<AssertBlankOutput>;
 }
 
-impl TypeGuard for ConstBool<true> {
+impl TypeGuardK for ConstBool<true> {
     type OutputF<'t> = IdHkt;
+}
+
+/// Used to guard output type at type level. Has the same definition as [Hkt] but is sealed and implemented exclusively for [ConstBool].
+pub trait TypeGuard<'t>: sealed::BaseSealed {
+    type Output<'a, A: 'a>: 'a
+    where
+        't: 'a;
+    type Err<'a>: 'a
+    where
+        't: 'a;
+
+    /// Match with some runtime overhead due to enum - but at least no unsafe needed.
+    fn match_guard<'a, A>(guarded_val: Self::Output<'a, A>) -> Result<A, Self::Err<'a>>
+    where
+        A: 'a,
+        't: 'a;
+
+    /// Converts a value into a guarded output.
+    fn into_guarded<'a, A>(val: A) -> Self::Output<'a, A>
+    where
+        A: 'a,
+        't: 'a;
+
+    fn try_create_guarded<'a, A>() -> Result<Self::Output<'a, A>, TypeGuardWasConstBoolTrue>
+    where
+        A: 'a,
+        't: 'a;
+}
+
+impl<'t> TypeGuard<'t> for ConstBool<false> {
+    type Output<'a, A: 'a>
+        = AssertBlankOutput
+    where
+        't: 'a;
+
+    type Err<'a>
+        = AssertBlankOutput
+    where
+        't: 'a;
+
+    fn match_guard<'a, A>(guarded_val: Self::Output<'a, A>) -> Result<A, Self::Err<'a>>
+    where
+        A: 'a,
+        't: 'a,
+    {
+        Err(guarded_val)
+    }
+
+    fn into_guarded<'a, A>(val: A) -> Self::Output<'a, A>
+    where
+        A: 'a,
+        't: 'a,
+    {
+        AssertBlankOutput
+    }
+
+    fn try_create_guarded<'a, A>() -> Result<Self::Output<'a, A>, TypeGuardWasConstBoolTrue>
+    where
+        A: 'a,
+        't: 'a,
+    {
+        Ok(AssertBlankOutput)
+    }
+}
+
+impl<'t> TypeGuard<'t> for ConstBool<true> {
+    type Output<'a, A: 'a>
+        = A
+    where
+        't: 'a;
+
+    type Err<'a>
+        = Infallible
+    where
+        't: 'a;
+
+    fn match_guard<'a, A>(guarded_val: Self::Output<'a, A>) -> Result<A, Self::Err<'a>>
+    where
+        A: 'a,
+        't: 'a,
+    {
+        Ok(guarded_val)
+    }
+
+    fn into_guarded<'a, A>(val: A) -> Self::Output<'a, A>
+    where
+        A: 'a,
+        't: 'a,
+    {
+        val
+    }
+
+    fn try_create_guarded<'a, A>() -> Result<Self::Output<'a, A>, TypeGuardWasConstBoolTrue>
+    where
+        A: 'a,
+        't: 'a,
+    {
+        Err(TypeGuardWasConstBoolTrue)
+    }
 }
 
 // impl<T> IsClone<ConstBool<false>> for T {
@@ -97,7 +200,7 @@ impl TypeGuard for ConstBool<true> {
 //     #[cold]
 //     fn protected_clone<'t>(
 //         a: &Self,
-//     ) -> <<ConstBool<false> as TypeGuard>::OutputF<'t> as Hkt<'t>>::F<'t, Self>
+//     ) -> <<ConstBool<false> as TypeGuardK>::OutputF<'t> as Hkt<'t>>::F<'t, Self>
 //     where
 //         Self: Sized,
 //     {
@@ -110,7 +213,7 @@ impl TypeGuard for ConstBool<true> {
 
 //     fn protected_clone<'t>(
 //         a: &Self,
-//     ) -> <<ConstBool<true> as TypeGuard>::OutputF<'t> as Hkt<'t>>::F<'t, Self>
+//     ) -> <<ConstBool<true> as TypeGuardK>::OutputF<'t> as Hkt<'t>>::F<'t, Self>
 //     where
 //         Self: Sized,
 //     {
@@ -118,7 +221,8 @@ impl TypeGuard for ConstBool<true> {
 //     }
 // }
 
-pub trait IsUnpin<Bool: IsConstBool> {
+#[deprecated = "Unused"]
+pub(crate) trait IsUnpin<Bool: IsConstBool> {
     type Sealed: sealed::AssociatedSealed;
 }
 
@@ -129,7 +233,8 @@ impl<T: Unpin> IsUnpin<ConstBool<true>> for T {
     type Sealed = sealed::AssociatedKey;
 }
 
-pub trait IsUnwindSafe<Bool: IsConstBool> {
+#[deprecated = "Unused"]
+pub(crate) trait IsUnwindSafe<Bool: IsConstBool> {
     type Sealed: sealed::AssociatedSealed;
 }
 
@@ -140,7 +245,8 @@ impl<T: UnwindSafe> IsUnwindSafe<ConstBool<true>> for T {
     type Sealed = sealed::AssociatedKey;
 }
 
-pub trait IsRefUnwindSafe<Bool: IsConstBool> {
+#[deprecated = "Unused"]
+pub(crate) trait IsRefUnwindSafe<Bool: IsConstBool> {
     type Sealed: sealed::AssociatedSealed;
 }
 
@@ -151,12 +257,12 @@ impl<T: RefUnwindSafe> IsRefUnwindSafe<ConstBool<true>> for T {
     type Sealed = sealed::AssociatedKey;
 }
 
-// pub trait IsDebug<Bool: IsConstBool + TypeGuard> {
+// pub trait IsDebug<Bool: IsConstBool + TypeGuardK> {
 //     type Sealed: sealed::AssociatedSealed;
 
 //     fn as_debug<'t>(
 //         &'t self,
-//     ) -> <<Bool as TypeGuard>::OutputF<'t> as Hkt<'t>>::F<'t, Wrapper<&'t Self>>;
+//     ) -> <<Bool as TypeGuardK>::OutputF<'t> as Hkt<'t>>::F<'t, Wrapper<&'t Self>>;
 // }
 
 // impl<T> IsDebug<ConstBool<false>> for T {
@@ -164,7 +270,7 @@ impl<T: RefUnwindSafe> IsRefUnwindSafe<ConstBool<true>> for T {
 
 //     fn as_debug<'t>(
 //         &'t self,
-//     ) -> <<ConstBool<false> as TypeGuard>::OutputF<'t> as Hkt<'t>>::F<'t, Wrapper<&'t Self>> {
+//     ) -> <<ConstBool<false> as TypeGuardK>::OutputF<'t> as Hkt<'t>>::F<'t, Wrapper<&'t Self>> {
 //         MissingBoundAtCompileTimeError
 //     }
 // }
@@ -174,12 +280,13 @@ impl<T: RefUnwindSafe> IsRefUnwindSafe<ConstBool<true>> for T {
 
 //     fn as_debug<'t>(
 //         &'t self,
-//     ) -> <<ConstBool<true> as TypeGuard>::OutputF<'t> as Hkt<'t>>::F<'t, Wrapper<&'t Self>> {
+//     ) -> <<ConstBool<true> as TypeGuardK>::OutputF<'t> as Hkt<'t>>::F<'t, Wrapper<&'t Self>> {
 //         Wrapper(self)
 //     }
 // }
 
-pub struct Wrapper<T>(T);
+#[deprecated = "Unused"]
+pub(crate) struct Wrapper<T>(T);
 
 // impl<T: IsDebug<ConstBool<true>>> Debug for Wrapper<T> {
 //     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -202,7 +309,7 @@ impl<T: IsRefUnwindSafe<ConstBool<true>>> RefUnwindSafe for Wrapper<T> {}
 
 #[deprecated = "The compiler cannot prove exhaustiveness"]
 /// Trait listing whether a type is required to implement [Clone], [Debug](std::fmt::Debug) and other marker traits.
-pub trait TraitRequirements {
+pub(crate) trait TraitRequirements {
     type IsSend: IsConstBool;
     type IsSync: IsConstBool;
     type IsUnpin: IsConstBool;
@@ -210,8 +317,9 @@ pub trait TraitRequirements {
     type IsRefUnwindSafe: IsConstBool;
 }
 
+#[deprecated = "Unused"]
 /// Compound trait to simplify bounds
-pub trait TraitRequirementsTarget<Req: TraitRequirements>:
+pub(crate) trait TraitRequirementsTarget<Req: TraitRequirements>:
     IsSend<Req::IsSend>
     + IsSync<Req::IsSync>
     + IsUnpin<Req::IsUnpin>
@@ -229,11 +337,11 @@ impl<
 {
 }
 
+#[deprecated = "Unused"]
 /// Marker type to signal that none of [TraitRequirements] are required.
-pub struct RequireNone<ActualHkt = NullaryHkt>(Infallible, PhantomMarker<ActualHkt>);
+pub(crate) struct RequireNone<ActualHkt = NullaryHkt>(Infallible, PhantomMarker<ActualHkt>);
 
 impl<K> TraitRequirements for RequireNone<K> {
-
     type IsSend = ConstBool<false>;
 
     type IsSync = ConstBool<false>;
@@ -272,7 +380,10 @@ impl<T> UnsafeAuto<T> {
         Self(t)
     }
 
-    pub(crate) fn assert_markers_implemented(_: impl Send + Sync + Unpin + UnwindSafe + RefUnwindSafe) {}
+    pub(crate) fn assert_markers_implemented(
+        _: impl Send + Sync + Unpin + UnwindSafe + RefUnwindSafe,
+    ) {
+    }
 
     pub(crate) fn into_inner(self) -> T {
         self.0

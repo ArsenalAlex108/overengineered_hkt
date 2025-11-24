@@ -2,6 +2,7 @@ use std::convert::identity;
 use std::ops::Deref as _;
 use std::{convert::Infallible, marker::PhantomData};
 
+use dyn_clone::clone;
 use tap::Pipe as _;
 
 use crate::hkt::bind::BindT;
@@ -13,6 +14,7 @@ use crate::hkt::{
     Applicative, CloneFnHkt, CloneK, CloneOwnedK, CovariantK, FoldWhile, Foldable, Functor, Monad,
     Pure, PureMapInner, Rfoldable, Traversable, UnsizedHkt, UnsizedHktUnsized,
 };
+use crate::marker_classification::{ConstBool, TypeGuard};
 use crate::{
     TyEq,
     hkt::{Hkt, HktUnsized, id::IdHkt},
@@ -53,15 +55,15 @@ impl<TInner> HktClassification for BoxT<TInner> {
 
 impl<
     't,
-    ReqIn: Hkt<'t>,
-    ReqOut: Hkt<'t>,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Functor<'t, ReqIn, ReqOut, ReqF1>,
 > Functor<'t, ReqIn, ReqOut, ReqF1> for BoxT<TInner>
 {
     fn map<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         fa: Self::F<'a, A>,
     ) -> Self::F<'a, B>
@@ -76,7 +78,7 @@ impl<
         't: 'a,
     {
         fa.pipe(TInner::F::transmute_hkt_from::<BoxT<IdHkt>>)
-            .pipe(|a| TInner::map(in_requirement, out_requirement, f, *a))
+            .pipe(|a| TInner::map(clone_a, clone_b, f, *a))
             .pipe(Box::new)
             .pipe(TInner::F::transmute_hkt_into::<BoxT<IdHkt>>)
     }
@@ -84,15 +86,15 @@ impl<
 
 impl<
     't,
-    ReqIn: Hkt<'t>,
-    ReqOut: Hkt<'t>,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Foldable<'t, ReqIn, ReqOut, ReqF1>,
 > Foldable<'t, ReqIn, ReqOut, ReqF1> for BoxT<TInner>
 {
     fn fold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
         fb: Self::F<'a, A>,
@@ -110,8 +112,8 @@ impl<
         't: 'a + 'b,
     {
         TInner::fold_while(
-            in_requirement,
-            out_requirement,
+            clone_a,
+            clone_b,
             f,
             init,
             *fb.pipe(TInner::F::transmute_hkt_from::<BoxT<IdHkt>>),
@@ -121,15 +123,15 @@ impl<
 
 impl<
     't,
-    ReqIn: Hkt<'t>,
-    ReqOut: Hkt<'t>,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Rfoldable<'t, ReqIn, ReqOut, ReqF1>,
 > Rfoldable<'t, ReqIn, ReqOut, ReqF1> for BoxT<TInner>
 {
     fn rfold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
         fb: Self::F<'a, A>,
@@ -147,8 +149,8 @@ impl<
         't: 'a + 'b,
     {
         TInner::rfold_while(
-            in_requirement,
-            out_requirement,
+            clone_a,
+            clone_b,
             f,
             init,
             *fb.pipe(TInner::F::transmute_hkt_from::<BoxT<IdHkt>>),
@@ -156,27 +158,27 @@ impl<
     }
 }
 
-impl<'t, ReqIn: Hkt<'t>, TInner: Pure<'t, ReqIn>> Pure<'t, ReqIn> for BoxT<TInner> {
-    fn pure<'a, A>(in_requirement: ReqIn::F<'a, A>, a: A) -> Self::F<'a, A>
+impl<'t, ReqIn: TypeGuard<'t>, TInner: Pure<'t, ReqIn>> Pure<'t, ReqIn> for BoxT<TInner> {
+    fn pure<'a, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, a: A) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a,
     {
-        Box::new(TInner::pure(in_requirement, a)).pipe(TInner::F::transmute_hkt_into::<BoxT<IdHkt>>)
+        Box::new(TInner::pure(clone_a, a)).pipe(TInner::F::transmute_hkt_into::<BoxT<IdHkt>>)
     }
 }
 
 impl<
     't,
-    ReqIn: Hkt<'t>,
-    ReqOut: Hkt<'t>,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Applicative<'t, ReqIn, ReqOut, ReqF1>,
 > Applicative<'t, ReqIn, ReqOut, ReqF1> for BoxT<TInner>
 {
     fn apply<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         ff: Self::F<'a, <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>>,
         fa: Self::F<'a, A>,
     ) -> Self::F<'a, B>
@@ -193,7 +195,7 @@ impl<
         let ff = *ff.pipe(TInner::F::transmute_hkt_from::<BoxT<IdHkt>>);
         let fa = *fa.pipe(TInner::F::transmute_hkt_from::<BoxT<IdHkt>>);
 
-        TInner::apply(in_requirement, out_requirement, ff, fa)
+        TInner::apply(clone_a, clone_b, ff, fa)
             .pipe(Box::new)
             .pipe(TInner::F::transmute_hkt_into::<BoxT<IdHkt>>)
     }
@@ -201,15 +203,15 @@ impl<
 
 impl<
     't,
-    ReqIn: Hkt<'t>,
-    ReqOut: Hkt<'t>,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Monad<'t, ReqIn, ReqOut, ReqF1>,
 > Monad<'t, ReqIn, ReqOut, ReqF1> for BoxT<TInner>
 {
     fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         fa: Self::F<'a, A>,
         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
     ) -> Self::F<'a, B>
@@ -229,7 +231,7 @@ impl<
 
         let fa = *fa.pipe(TInner::F::transmute_hkt_from::<BoxT<IdHkt>>);
 
-        TInner::bind(in_requirement, out_requirement, fa, f)
+        TInner::bind(clone_a, clone_b, fa, f)
             .pipe(Box::new)
             .pipe(TInner::F::transmute_hkt_into::<BoxT<IdHkt>>)
     }
@@ -237,17 +239,14 @@ impl<
 
 impl<
     't,
-    ReqIn: Hkt<'t>
-        + CloneK<'t>
-        + PureMapInner<'t, NullaryHkt, BoxT>
-        + PureMapInner<'t, NullaryHkt, TInner>,
+    ReqIn: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
-    TInner: Traversable<'t, ReqIn, ReqIn, ReqF1>,
+    TInner: Traversable<'t, ReqIn, ReqIn, ReqF1> + CloneK<'t, ReqIn>,
 > Traversable<'t, ReqIn, ReqIn, ReqF1> for BoxT<TInner>
 {
     fn traverse<'a, A, B, F, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqIn::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqIn::Output<'a, B> + Clone,
         f: ReqF1::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         fa: Self::F<'a, A>,
     ) -> F::F<'a, Self::F<'a, B>>
@@ -259,43 +258,47 @@ impl<
         F1Fn: 'a + Fn(A) -> F::F<'a, B>,
         F1Clone: 'a + Fn(A) -> F::F<'a, B> + Clone,
         F1Copy: 'a + Fn(A) -> F::F<'a, B> + Copy,
-        F: Applicative<'t, ReqIn, ReqIn, ReqF1>,
+        F: Applicative<'t, ReqIn, ReqIn, ReqF1> + Functor<'t, ReqIn, ConstBool<false>, ReqF1>,
         't: 'a,
     {
-        let get_in_req = move || ReqIn::clone((), &in_requirement);
-        let get_out_req = move || ReqIn::clone((), &out_requirement);
-
         let f_tag = ReqF1::create_from(&f, |a: TInner::F<'a, B>| Box::new(a));
 
         let result: F::F<'a, TInner::F<'a, B>> = TInner::traverse::<_, _, F, _, _, _, _, _>(
-            get_in_req(),
-            get_out_req(),
+            clone_a.clone(),
+            clone_b.clone(),
             f,
             *fa.pipe(TInner::F::transmute_hkt_from::<BoxT<IdHkt>>),
         );
 
-        let req_inner: ReqIn::F<'a, TInner::F<'a, B>> =
-            <ReqIn as PureMapInner<_, TInner>>::pure_map_inner((), get_out_req());
+        let clone_b2 = clone_b.clone();
 
-        let req_box_inner: ReqIn::F<'a, Box<TInner::F<'a, B>>> =
-            <ReqIn as PureMapInner<_, BoxT>>::pure_map_inner((), req_inner);
-
-        let req_inner: ReqIn::F<'a, TInner::F<'a, B>> =
-            <ReqIn as PureMapInner<_, TInner>>::pure_map_inner((), get_out_req());
-
-        F::map(req_inner, req_box_inner, f_tag, result)
-            .pipe(TInner::F::transmute_hkt_into::<BindT<F, BoxT>>)
+        <F as Functor<'t, ReqIn, ReqIn, ReqF1>>::map(
+            move |tb| TInner::clone(clone_b.clone(), tb).pipe(ReqIn::into_guarded),
+            move |tb| {
+                TInner::clone(clone_b2.clone(), &*tb)
+                    .pipe(Box::new)
+                    .pipe(ReqIn::into_guarded)
+            },
+            f_tag,
+            result,
+        )
+        .pipe(TInner::F::transmute_hkt_into::<BindT<F, BoxT>>)
     }
 }
 
-impl<'t, ReqIn: Hkt<'t>, TInner: CloneOwnedK<'t, ReqIn>> CloneOwnedK<'t, ReqIn> for BoxT<TInner> {
-    fn clone_owned<'a, 'b, A>(in_requirement: ReqIn::F<'a, A>, a: &Self::F<'a, A>) -> Self::F<'b, A>
+impl<'t, ReqIn: TypeGuard<'t>, TInner: CloneOwnedK<'t, ReqIn>> CloneOwnedK<'t, ReqIn>
+    for BoxT<TInner>
+{
+    fn clone_owned<'a, 'b, A>(
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'b, A> + Clone,
+        a: &Self::F<'a, A>,
+    ) -> Self::F<'b, A>
     where
         A: 'a + 'b,
         't: 'a + 'b,
     {
         TInner::clone_owned(
-            in_requirement,
+            clone_a,
             a.deref().pipe(TInner::F::transmute_hkt_from::<RefT>),
         )
         .pipe(Box::new)
@@ -303,14 +306,17 @@ impl<'t, ReqIn: Hkt<'t>, TInner: CloneOwnedK<'t, ReqIn>> CloneOwnedK<'t, ReqIn> 
     }
 }
 
-impl<'t, ReqIn: Hkt<'t>, TInner: CloneK<'t, ReqIn>> CloneK<'t, ReqIn> for BoxT<TInner> {
-    fn clone<'a, A>(in_requirement: ReqIn::F<'a, A>, a: &Self::F<'a, A>) -> Self::F<'a, A>
+impl<'t, ReqIn: TypeGuard<'t>, TInner: CloneK<'t, ReqIn>> CloneK<'t, ReqIn> for BoxT<TInner> {
+    fn clone<'a, A>(
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        a: &Self::F<'a, A>,
+    ) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a,
     {
         TInner::clone(
-            in_requirement,
+            clone_a,
             a.deref().pipe(TInner::F::transmute_hkt_from::<RefT>),
         )
         .pipe(Box::new)

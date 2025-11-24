@@ -3,12 +3,13 @@ use std::{convert::Infallible, future::ready, marker::PhantomData, pin::Pin};
 use futures::FutureExt;
 use tap::Pipe;
 
-use crate::hkt::{
-    Applicative, CloneK, CovariantK, Foldable, Functor, Hkt, HktUnsized, Monad, Pure, UnwrapEither, hkt_classification::{self, HktClassification}, id::IdHkt, one_of::OneOf5Hkt
-};
+use crate::{hkt::{
+    Applicative, CovariantK, Functor, Hkt, HktUnsized, Monad, Pure, hkt_classification::{self, HktClassification}, id::IdHkt, one_of::OneOf5Hkt
+}, marker_classification::TypeGuard};
 
 use super::one_of::OneOf5;
 
+/// Will be changed to type alias for `PinT<BoxT<DynFutureT<TInner>>>`
 pub struct PinBoxFutureT<TInner = IdHkt>(Infallible, PhantomData<TInner>);
 
 impl<'t, TInner: Hkt<'t>> Hkt<'t> for PinBoxFutureT<TInner> {
@@ -42,15 +43,15 @@ impl<'t, K: CovariantK<'t>> CovariantK<'t> for PinBoxFutureT<K> {
 
 impl<
     't,
-    ReqIn: Hkt<'t>,
-    ReqOut: Hkt<'t>,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Functor<'t, ReqIn, ReqOut, ReqF1>,
 > Functor<'t, ReqIn, ReqOut, ReqF1> for PinBoxFutureT<TInner>
 {
     fn map<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         fa: Self::F<'a, A>,
     ) -> Self::F<'a, B>
@@ -64,16 +65,16 @@ impl<
         F1Copy: 'a + Fn(A) -> B + Copy,
         't: 'a,
     {
-        Box::pin(fa.map(|a| TInner::map(in_requirement, out_requirement, f, a)))
+        Box::pin(fa.map(|a| TInner::map(clone_a, clone_b, f, a)))
     }
 }
 
-impl<'t, ReqIn: Hkt<'t>, TInner: Pure<'t, ReqIn>> Pure<'t, ReqIn> for PinBoxFutureT<TInner> {
-    fn pure<'a, A: 'a>(in_requirement: ReqIn::F<'a, A>, a: A) -> Self::F<'a, A>
+impl<'t, ReqIn: TypeGuard<'t>, TInner: Pure<'t, ReqIn>> Pure<'t, ReqIn> for PinBoxFutureT<TInner> {
+    fn pure<'a, A: 'a>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, a: A) -> Self::F<'a, A>
     where
         't: 'a,
     {
-        a.pipe(|a| TInner::pure(in_requirement, a))
+        a.pipe(|a| TInner::pure(clone_a, a))
             .pipe(ready)
             .pipe(Box::pin)
     }
@@ -81,15 +82,15 @@ impl<'t, ReqIn: Hkt<'t>, TInner: Pure<'t, ReqIn>> Pure<'t, ReqIn> for PinBoxFutu
 
 impl<
     't,
-    ReqIn: Hkt<'t>,
-    ReqOut: Hkt<'t>,
+    ReqIn: TypeGuard<'t>,
+    ReqOut: TypeGuard<'t>,
     ReqF1: OneOf5Hkt<'t>,
     TInner: Applicative<'t, ReqIn, ReqOut, ReqF1>,
 > Applicative<'t, ReqIn, ReqOut, ReqF1> for PinBoxFutureT<TInner>
 {
     fn apply<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         ff: Self::F<'a, <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>>,
         fa: Self::F<'a, A>,
     ) -> Self::F<'a, B>
@@ -105,7 +106,7 @@ impl<
     {
         Box::pin(
             fa.map(async |a| {
-                TInner::apply(in_requirement, out_requirement, ff.await, a)
+                TInner::apply(clone_a, clone_b, ff.await, a)
             })
             .flatten(),
         )
@@ -152,12 +153,12 @@ impl<
 //     }
 // }
 
-impl<'t, ReqIn: Hkt<'t>, ReqOut: Hkt<'t>, ReqF1: OneOf5Hkt<'t>> Monad<'t, ReqIn, ReqOut, ReqF1>
+impl<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>> Monad<'t, ReqIn, ReqOut, ReqF1>
     for PinBoxFutureT<IdHkt>
 {
     fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
-        in_requirement: ReqIn::F<'a, A>,
-        out_requirement: ReqOut::F<'a, B>,
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        clone_b: impl 'a + Fn(&B) -> ReqOut::Output<'a, B> + Clone,
         fa: Self::F<'a, A>,
         f: <ReqF1>::OneOf5F<'a, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
     ) -> Self::F<'a, B>

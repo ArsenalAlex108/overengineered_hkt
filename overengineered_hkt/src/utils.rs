@@ -57,47 +57,32 @@ impl<T: naan::fun::F1<A>, A> AsFn<A> for T {
 // }
 
 /// Wraps a value and a cloning function. Useful for moving them into closures and cloning later.
+/// # Example:
+/// ```
+/// // Struct not implementing Clone
+/// struct Val(i32);
+/// 
+/// let val = Val(1);
+/// 
+/// let func = move || val;
+/// // func implements Clone
+/// func.clone()
+/// ```
 pub struct CloneWrapper<T, F>(pub T, pub F);
+
+impl<T, F> CloneWrapper<T, F> {
+    /// Obtain a reference to T using this method to force the closure to move the wrapper struct instead of just T.
+    /// 
+    /// Instead of: `&wrapper.clone().0`
+    /// 
+    /// Consider this if you only want the reference while forcing the closure to move the wrapper struct: `wrapper.get_ref_t()`
+    pub fn get_ref_t(&self) -> &T {
+        &self.0
+    }
+}
 
 impl<T, F: Fn(&T) -> T + Clone> Clone for CloneWrapper<T, F> {
     fn clone(&self) -> Self {
         Self(self.1(&self.0), self.1.clone())
-    }
-}
-
-
-#[cfg(test)]
-mod test {
-    use std::panic::resume_unwind;
-
-
-    #[test]
-    fn scratch() {
-
-        // Only valid if unwinding is enabled
-        #[cfg(panic = "unwind")]
-        fn f() -> i32 {
-
-            let some_result = Err(());
-
-            // Struct to mark the break signal specific to this code
-            struct Break;
-
-            // Catch all panics
-            match std::panic::catch_unwind(||
-                some_result.unwrap_or_else(|_| {
-                    // Trigger panicking with the break signal as payload without invoking the global panic hook.
-                    std::panic::resume_unwind(Box::new(Break))
-                })
-            ) {
-                Ok(i) => i,
-                // Inspect the payload if panic was thrown. If you are certain nothing inside std::panic::catch_unwind other than your signal can panic, you can use panic!() or std::panic::resume_unwind(Box::new(())) instead, skip checking the type of the payload and just return the default value.
-                Err(e) =>
-                    // If its the specified signal, return a default value
-                    if e.is::<Break>() { 1 }
-                    // Else resume panicking with that payload
-                    else { resume_unwind(e) },
-            }
-        }
     }
 }

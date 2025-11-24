@@ -52,6 +52,8 @@ pub fn generate_one_of(count: TokenStream) -> TokenStream {
 
     let type_params_bounded = generate.generate_string(|i| format!(" T{i}: 'a,"));
 
+    let type_params_bounded_by_b = generate.generate_string(|i| format!(" T{i}: 'b,"));
+
     let type_params_bounded_a = generate.generate_string(|i| format!(" T{i}a: 'a,"));
 
     let type_params_bounded_b = generate.generate_string(|i| format!(" T{i}b: 'b,"));
@@ -94,14 +96,14 @@ pub fn generate_one_of(count: TokenStream) -> TokenStream {
                 ) -> OneOf{count}<{type_params}> where 't: 'a;
 
                 /// Converts a mut reference to this object into an owned object with mut references to each variant,
-                fn as_mut<'a, {type_params_bounded}>(
-                    s: &'a mut Self::OneOf{count}F<'a, {type_params}>
-                ) -> Self::OneOf{count}F<'a, {type_params_mut}> where 't: 'a;
+                fn as_mut<'a, 'b, {type_params_bounded_by_b}>(
+                    s: &'a mut Self::OneOf{count}F<'b, {type_params}>
+                ) -> Self::OneOf{count}F<'a, {type_params_mut}> where 'b: 'a, 't: 'b;
 
                 /// Converts a reference to this object into an owned object with references to each variant,
-                fn as_ref<'a, {type_params_bounded}>(
-                    s: &'a Self::OneOf{count}F<'a, {type_params}>
-                ) -> Self::OneOf{count}F<'a, {type_params_ref}> where 't: 'a;
+                fn as_ref<'a, 'b, {type_params_bounded_by_b}>(
+                    s: &'a Self::OneOf{count}F<'b, {type_params}>
+                ) -> Self::OneOf{count}F<'a, {type_params_ref}> where 'b: 'a, 't: 'b;
 
                 /// Perform mapping on each type - but only exactly one of the provided functions will execute.
                 fn map_one_of_{count}<'a, 'b, 'f,
@@ -113,11 +115,12 @@ pub fn generate_one_of(count: TokenStream) -> TokenStream {
                 ) -> Self::OneOf{count}F<'b, {type_params_b}>
                 where
                     'a: 'f,
+                    'b: 'f,
                     't: 'a + 'b;
 
 
-                /// Unwrap into `T` when all variants have the same type. The default implementation uses [Self::into_one_of_{count}_enum](OneOf{count}Hkt::into_one_of_{count}_enum), but a more efficient implementation may be provided instead.
-                fn unwrap_all<'a, T: 'a>(s: Self::OneOf{count}F<'a, {t_s}>) -> T
+                /// Converts into `T` when all variants have the same type. The default implementation uses [Self::into_one_of_{count}_enum](OneOf{count}Hkt::into_one_of_{count}_enum), but a more efficient implementation may be provided instead.
+                fn into_one_of_{count}<'a, T: 'a>(s: Self::OneOf{count}F<'a, {t_s}>) -> T
                 where
                     't: 'a,
                 {{
@@ -127,12 +130,12 @@ pub fn generate_one_of(count: TokenStream) -> TokenStream {
                 }}
 
                 /// Create a new object from an existing one to store a different value.
-                fn create_from<'a, {type_params_bounded} T: 'a>(
-                    old: &Self::OneOf{count}F<'a, {type_params}>,
+                fn create_from<'a, 'b, {type_params_bounded} T: 'b>(
+                    _: &Self::OneOf{count}F<'a, {type_params}>,
                     value: T,
-                ) -> Self::OneOf{count}F<'a, {t_s}>
+                ) -> Self::OneOf{count}F<'b, {t_s}>
                 where
-                    't: 'a;
+                    't: 'a + 'b;
 
                 /// Create a new object from an existing one to store a different value.
                 fn clone_one_of_{count}<'a, 'b, {type_params_bounded_clone}>(
@@ -195,16 +198,16 @@ pub fn generate_one_of(count: TokenStream) -> TokenStream {
                     }}
 
                     /// Converts a mut reference to this object into an owned object with mut references to each variant,
-                    fn as_mut<'a, {type_params_bounded}>(
-                        s: &'a mut Self::OneOf{count}F<'a, {type_params}>
-                    ) -> Self::OneOf{count}F<'a, {type_params_mut}> where 't: 'a {{ 
+                    fn as_mut<'a, 'b, {type_params_bounded_by_b}>(
+                        s: &'a mut Self::OneOf{count}F<'b, {type_params}>
+                    ) -> Self::OneOf{count}F<'a, {type_params_mut}> where 'b: 'a, 't: 'b {{ 
                         s
                     }}
 
                     /// Converts a reference to this object into an owned object with references to each variant,
-                    fn as_ref<'a, {type_params_bounded}>(
-                        s: &'a Self::OneOf{count}F<'a, {type_params}>
-                    ) -> Self::OneOf{count}F<'a, {type_params_ref}> where 't: 'a {{
+                    fn as_ref<'a, 'b, {type_params_bounded_by_b}>(
+                        s: &'a Self::OneOf{count}F<'b, {type_params}>
+                    ) -> Self::OneOf{count}F<'a, {type_params_ref}> where 'b: 'a, 't: 'b {{
                         s
                     }}
 
@@ -222,8 +225,8 @@ pub fn generate_one_of(count: TokenStream) -> TokenStream {
                         map_t{i}(s)
                     }}
 
-                    /// Unwrap into `T` when all variants have the same type. The default implementation uses [Self::into_one_of_{count}_enum](OneOf{count}Hkt::into_one_of_{count}_enum), but a more efficient implementation may be provided instead.
-                    fn unwrap_all<'a, T: 'a>(s: Self::OneOf{count}F<'a, {t_s}>) -> T
+                    /// Converts into `T` when all variants have the same type. The default implementation uses [Self::into_one_of_{count}_enum](OneOf{count}Hkt::into_one_of_{count}_enum), but a more efficient implementation may be provided instead.
+                    fn into_one_of_{count}<'a, T: 'a>(s: Self::OneOf{count}F<'a, {t_s}>) -> T
                     where
                         't: 'a,
                     {{
@@ -231,12 +234,12 @@ pub fn generate_one_of(count: TokenStream) -> TokenStream {
                     }}
 
                     /// Create a new object from an existing one to store a different value.
-                    fn create_from<'a, {type_params_bounded} T: 'a>(
+                    fn create_from<'a, 'b, {type_params_bounded} T: 'b>(
                         _: &Self::OneOf{count}F<'a, {type_params}>,
                         value: T,
-                    ) -> Self::OneOf{count}F<'a, {t_s}>
+                    ) -> Self::OneOf{count}F<'b, {t_s}>
                     where
-                        't: 'a {{
+                        't: 'a + 'b {{
                         value
                     }}
 
