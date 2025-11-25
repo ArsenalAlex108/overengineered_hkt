@@ -8,7 +8,7 @@ use crate::{
     }, marker_classification::{ConstBool, TypeGuard}
 };
 
-pub struct ResultT<E, TInner = IdHkt>(Infallible, PhantomMarker<(TInner, E)>);
+pub struct ResultT<E, TInner>(Infallible, PhantomMarker<(TInner, E)>);
 
 impl<'t, TInner: Hkt<'t>, E: 't> Hkt<'t> for ResultT<E, TInner> {
     type F<'a, A: 'a> = Result<TInner::F<'a, A>, E> where 't: 'a;
@@ -199,7 +199,7 @@ impl<
     ReqOut: TypeGuard<'t>,
     // TODO: Consider if cloning funcs should be [Copy]
     ReqF1: OneOf5Hkt<'t>,
-> Monad<'t, ReqIn, ReqOut, ReqF1> for ResultT<E>
+> Monad<'t, ReqIn, ReqOut, ReqF1> for ResultT<E, IdHkt>
 {
     fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         _clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,

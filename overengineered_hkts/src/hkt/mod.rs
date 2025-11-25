@@ -128,7 +128,7 @@ mod test {
 
     use const_random::const_random;
 
-    use crate::hkt::{option::OptionT, vec::VecT};
+    use crate::{hkt::{Monad, boxed::BoxT, future::PinBoxFutureT, id::IdHkt, iter::DynIteratorT, one_of::T4Of5Hkt, option::OptionT, result::ResultT, vec::VecT}, marker_classification::DependentClone};
 
     type Hkt = VecT<VecT>;
     type HktI = Vec<Vec<i32>>;
@@ -156,6 +156,27 @@ mod test {
         i.overflowing_mul(37).0
     }
 
+    fn i32_to_option_vec(i: i32) -> Option<Vec<i32>> {
+        match i {
+            ..=-1 => None,
+            0 => Some(Vec::new()),
+            1.. => Some(vec![i; i.try_into().expect("i > 0 here")]),
+        }
+    }
+
+    fn i32_to_vec_option(i: i32) -> Vec<Option<i32>> {
+        if i <= 0 {
+            Vec::new()
+        }
+        else if i % 2 == 0 {
+            (1..i).flat_map(|i| [Some(i), None])
+            .chain([Some(i)])
+            .collect()
+        } else {
+            (1..=i).map(Some).collect()
+        }
+    }
+
     fn validate(results: impl IntoIterator<Item = bool>) {
         results
             .into_iter()
@@ -174,7 +195,9 @@ mod test {
         ])
     }
 
-    type ArbitraryHkt = OptionT<OptionT<VecT>>;
+    type ArbitraryHkt = 
+    //Can't compare: VecT<ResultT<i32, PinBoxFutureT<OptionT<BoxT<DynIteratorT>>>>>
+    VecT<OptionT<VecT<ResultT<i32, IdHkt>>>>;
 
     #[test]
     fn test_applicatve_laws() {
@@ -184,6 +207,7 @@ mod test {
             applicative::composition_law::<Hkt>(rand(), f1, f2, eq),
             applicative::homomorphism_law::<Hkt>(rand(), f1, eq),
             applicative::interchange_law::<Hkt>(rand(), f1, eq),
+            applicative::composition_law_k::<Hkt>(get_test_base(), f1, f2, eq),
         ]);
 
         let eq = |a, b| a == b;
@@ -200,6 +224,14 @@ mod test {
     fn test_monad_laws() {
         use super::laws::monad;
 
+        validate([
+            monad::left_identity_law::<Hkt>(rand(), eq),
+            monad::right_identity_law::<Hkt>(rand(), eq),
+            monad::associativity_law::<Hkt>(rand(), f1, f2, eq),
+            monad::left_identity_law_k::<Hkt>(get_test_base(), eq),
+            monad::associativity_law_k::<Hkt>(get_test_base(), f1, f2, eq),
+        ]);
+
         let eq = |a, b| a == b;
 
         validate([
@@ -210,8 +242,27 @@ mod test {
     }
 
     #[test]
-    fn foldable_laws() {}
+    fn traversable_laws() {}
 
     #[test]
-    fn traversable_laws() {}
+    fn test_option_and_vec_bind() {
+        let input = Some(vec![-1, 0, 1, 2]);
+        let expected = Some(vec![1, 2, 2]);
+
+        // let input = vec![Some(-1), Some(0), Some(1), Some(2)];
+        assert_eq!(<OptionT<VecT> as Monad<DependentClone, DependentClone, T4Of5Hkt>>::bind::<
+                _,
+                _,
+                fn(i32) -> Option<Vec<i32>>,
+                fn(i32) -> Option<Vec<i32>>,
+                fn(i32) -> Option<Vec<i32>>,
+                _,
+                fn(i32) -> Option<Vec<i32>>,
+            >(
+            |i| *i,
+            |i| *i,
+            input,
+            i32_to_option_vec
+        ), expected);
+    }
 }

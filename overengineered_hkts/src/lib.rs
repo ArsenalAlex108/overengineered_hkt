@@ -1,4 +1,4 @@
-#![doc = include_str!("../../../../README.md")]
+#![doc = include_str!("../../README.md")]
 
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]

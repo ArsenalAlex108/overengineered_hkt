@@ -75,7 +75,7 @@ Due to how Rust memory layout is implemented, transmuting between Self::F<'a, A>
 - Currently there is no known way of enforcing type equality between hkt traits receiving Sized and hkt traits receiving ?Sized
 - Ergonomics is bad - *really* bad, and you can check on the laws implementations to see how unergonomic it is - and it's still being worked on.
 - The compiler is significantly less helpful at type inference since requirements are placed first and args and are prioritize in type inference; so the compiler is likely to offer misleading lints if the wrong requirements are used.
-- No way to specify your Hkt does not require cloning at all - still being worked on
+- No way to specify your Hkt does not require cloning at all - currently only whether passing a clone func is necessary to clone, and you still need to specify TCloneableOf5 and CloneK even if no cloning is needed - still being worked on
 
 ## Disclosure
 
