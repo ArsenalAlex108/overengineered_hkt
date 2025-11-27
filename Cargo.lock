@@ -278,37 +278,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6154b19920bf4498afaf169c5d619d5b351de6d83f8061c114e17061c1ebc612"
 
 [[package]]
-name = "negative"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41f9e4da2ecae87289472d4be0439adf7eb754d30468cd0e7d7ec35519cee485"
-dependencies = [
- "negative-proc_macros",
-]
-
-[[package]]
-name = "negative-impl"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67670e6848468ee39b823ed93add8bd2adb66a132b0c25fce6e60af0b81d930a"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.110",
-]
-
-[[package]]
-name = "negative-proc_macros"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b96436c1ad1b9e2e81fc88d12efcad2557940a7474411868287ff1301242b4dd"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.110",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -327,8 +296,6 @@ dependencies = [
  "futures",
  "intertrait",
  "naan",
- "negative",
- "negative-impl",
  "ref-cast",
  "static_assertions",
  "tap",

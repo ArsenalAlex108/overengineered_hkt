@@ -16,7 +16,7 @@ use crate::{
         hkt_classification::HktClassification,
         id::IdHkt,
         nullary::NullaryHkt,
-        one_of::{NotT1of5, NotT2of5, NotT3of5, OneOf5Hkt},
+        one_of::{NotT1Of5, NotT2Of5, NotT3Of5, OneOf5Hkt},
     },
     marker_classification::{AssertBlankOutput, ConstBool, TypeGuard, TyEq},
 };
@@ -50,7 +50,7 @@ impl<T> RefUnwindSafe for PhantomMarker<T> {}
 // }
 
 /// A is [Sized], Self::F<'a, A> is ?[Sized]
-/// 
+///
 /// `'t` is some arbitrary bound that always outlive every other bound in the hkt so that it can be used as a bound in some places where `'static` is the only other option
 pub trait UnsizedHkt<'t>: 't {
     /// Definition: F<'a, A: 't>: 'a (where 't: 'a is logical but maybe unnecessary)
@@ -66,10 +66,10 @@ pub trait UnsizedHkt<'t>: 't {
 /// F<'a, A: 'a>: 'a => The instance is bound by the same lifetime as the type
 /// If F<'a, 'b, A: 'a>: 'b => 'a: 'b or 'a includes 'b
 /// Cow<'a, A>: 'a => Cow<'static, A> then A: 'static
-const _: () = {}; 
+const _: () = {};
 
 /// A is [Sized], Self::F<'a, A> is [Sized]
-/// 
+///
 /// `'t` is some arbitrary bound that always outlive every other bound in the hkt so that it can be used as a bound in some places where `'static` is the only other option
 pub trait Hkt<'t>: UnsizedHkt<'t> {
     type F<'a, A: 'a>: 'a + TyEq<Self::UnsizedF<'a, A>>
@@ -147,7 +147,7 @@ pub trait Hkt<'t>: UnsizedHkt<'t> {
 // }
 
 /// A is ?[Sized], Self::F<'a, A> is ?[Sized]
-/// 
+///
 /// `'t` is some arbitrary bound that always outlive every other bound in the hkt so that it can be used as a bound in some places where `'static` is the only other option
 pub trait UnsizedHktUnsized<'t>:
     // TODO:
@@ -157,7 +157,7 @@ pub trait UnsizedHktUnsized<'t>:
 }
 
 /// A is ?[Sized]
-/// 
+///
 /// `'t` is some arbitrary bound that always outlive every other bound in the hkt so that it can be used as a bound in some places where `'static` is the only other option
 pub trait HktUnsized<'t>:
     UnsizedHktUnsized<'t>
@@ -207,9 +207,9 @@ impl<'t, T: HktUnsized<'t> + HktClassification<Choice = hkt_classification::Oute
 // }
 
 /// Converts enum with all variants being T into T
-pub trait IntoConverged {
+pub trait Converge {
     type T;
-    fn into_converged(self) -> Self::T;
+    fn converge(self) -> Self::T;
 }
 
 // impl<'t, T, E> IntoTryResultExt for TryFlow<T, E> {
@@ -241,10 +241,10 @@ pub trait IntoConverged {
 //     }
 // }
 
-impl<T> IntoConverged for FoldWhile<T> {
+impl<T> Converge for FoldWhile<T> {
     type T = T;
 
-    fn into_converged(self) -> Self::T {
+    fn converge(self) -> Self::T {
         match self {
             ControlFlow::Continue(t) => t,
             ControlFlow::Break(t) => t,
@@ -252,9 +252,9 @@ impl<T> IntoConverged for FoldWhile<T> {
     }
 }
 
-impl<T> IntoConverged for Result<T, T> {
+impl<T> Converge for Result<T, T> {
     type T = T;
-    fn into_converged(self) -> T {
+    fn converge(self) -> T {
         match self {
             Ok(t) => t,
             Err(t) => t,
@@ -286,12 +286,8 @@ impl<T> IntoConverged for Result<T, T> {
 /// Usecases: Eager & Lazy evaluation.
 ///
 /// `F1` usually needs cloning.
-pub trait Functor<
-    't,
-    ReqIn: TypeGuard<'t>,
-    ReqOut: TypeGuard<'t>,
-    ReqF1: OneOf5Hkt<'t>,
->: Hkt<'t>
+pub trait Functor<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>:
+    Hkt<'t>
 {
     // Clone-agnostic => clone transitivity proof:
     // If not Clone => Use cloneless
@@ -344,12 +340,8 @@ pub trait Functor<
 // }
 
 /// `F1` usually needs cloning.
-pub trait Cofunctor<
-    't,
-    ReqIn: TypeGuard<'t>,
-    ReqOut: TypeGuard<'t>,
-    ReqF1: OneOf5Hkt<'t>,
->: Hkt<'t>
+pub trait Cofunctor<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>:
+    Hkt<'t>
 {
     fn comap<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
@@ -407,28 +399,24 @@ pub type FoldWhile<T> = ControlFlow<T, T>;
 /// This trait can be trivial implemented for any type by just returning `init`, but that is not recommended.
 ///
 /// `F1` usually needs cloning.
-pub trait Foldable<
-    't,
-    ReqIn: TypeGuard<'t>,
-    ReqOut: TypeGuard<'t>,
-    ReqF1: OneOf5Hkt<'t>,
->: Hkt<'t>
+pub trait Foldable<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>, InHkt: Hkt<'t> = IdHkt>:
+    Hkt<'t>
 {
     fn fold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
         clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
-        fb: Self::F<'a, A>,
+        fa: InHkt::F<'a, Self::F<'a, A>>,
     ) -> FoldWhile<B>
     where
         A: 'a,
         B: 'b,
-        F1Once: 'f + FnOnce(B, A) -> FoldWhile<B>,
-        F1Mut: 'f + FnMut(B, A) -> FoldWhile<B>,
-        F1Fn: 'f + Fn(B, A) -> FoldWhile<B>,
-        F1Clone: 'f + Fn(B, A) -> FoldWhile<B> + Clone,
-        F1Copy: 'f + Fn(B, A) -> FoldWhile<B> + Copy,
+        F1Once: 'f + FnOnce(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Mut: 'f + FnMut(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Fn: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Clone: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B> + Clone,
+        F1Copy: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B> + Copy,
         'a: 'f,
         'b: 'f,
         't: 'a + 'b;
@@ -440,7 +428,7 @@ pub trait Foldable<
         out_requirement: ReqOut::F<'a, F>,
         tag: ReqF1::OneOf5F<'f, impl Sized, impl Sized, impl Sized, impl Sized, impl Sized>,
         collection: F,
-        fb: Self::F<'a, A>,
+        fa: Self::F<'a, A>,
     ) -> F
     where
         A: 'a,
@@ -455,7 +443,7 @@ pub trait Foldable<
             ControlFlow::Continue(sum)
         });
 
-        Self::fold_while(in_requirement, out_requirement, tag, collection, fb).unwrap_either()
+        Self::fold_while(in_requirement, out_requirement, tag, collection, fa).unwrap_either()
     }
      */
 
@@ -464,22 +452,31 @@ pub trait Foldable<
         clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
         tag: ReqF1::OneOf5F<'f, impl Sized, impl Sized, impl Sized, impl Sized, impl Sized>,
         collection: &'e mut E,
-        fb: Self::F<'a, A>,
+        fa: InHkt::F<'a, Self::F<'a, A>>,
     ) -> &'e mut E
     where
-        Self: Foldable<'t, ReqIn, ConstBool<false>, ReqF1>,
+        Self: Foldable<'t, ReqIn, ConstBool<false>, ReqF1, InHkt>,
         A: 'a,
-        E: 'e + Extend<A>,
+        E: 'e + Extend<InHkt::F<'a, A>>,
         'a: 'f,
         'e: 'f,
         't: 'a + 'e,
     {
-        let tag = ReqF1::create_from(&tag, |sum: &'e mut E, a: A| {
+        let tag = ReqF1::create_from(&tag, |sum: &'e mut E, a: InHkt::F<'a, A>| {
             sum.extend(core::iter::once(a));
             FoldWhile::Continue(sum)
         });
 
-        <Self as Foldable<'t, ReqIn, ConstBool<false>, ReqF1>>::fold_while::<A, &'e mut E, _, _, _, _, _>(clone_a, |_| AssertBlankOutput, tag, collection, fb).into_converged()
+        <Self as Foldable<'t, ReqIn, ConstBool<false>, ReqF1, InHkt>>::fold_while::<
+            A,
+            &'e mut E,
+            _,
+            _,
+            _,
+            _,
+            _,
+        >(clone_a, |_| AssertBlankOutput, tag, collection, fa)
+        .converge()
     }
 
     /// Hkt version of [Iterator::size_hint]
@@ -492,50 +489,43 @@ pub trait Foldable<
     }
 }
 
-
-
 /// `F1` usually needs cloning.
-pub trait Rfoldable<
-    't,
-    ReqIn: TypeGuard<'t>,
-    ReqOut: TypeGuard<'t>,
-    ReqF1: OneOf5Hkt<'t>,
->: Hkt<'t>
+pub trait Rfoldable<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>, InHkt: Hkt<'t> = IdHkt>:
+    Hkt<'t>
 {
     fn rfold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         clone_a: impl 'f + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
         clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
-        fb: Self::F<'a, A>,
+        fa: InHkt::F<'a, Self::F<'a, A>>,
     ) -> FoldWhile<B>
     where
         A: 'a,
         B: 'b,
-        F1Once: 'f + FnOnce(B, A) -> FoldWhile<B>,
-        F1Mut: 'f + FnMut(B, A) -> FoldWhile<B>,
-        F1Fn: 'f + Fn(B, A) -> FoldWhile<B>,
-        F1Clone: 'f + Fn(B, A) -> FoldWhile<B> + Clone,
-        F1Copy: 'f + Fn(B, A) -> FoldWhile<B> + Copy,
+        F1Once: 'f + FnOnce(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Mut: 'f + FnMut(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Fn: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Clone: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B> + Clone,
+        F1Copy: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B> + Copy,
         'a: 'f,
         'b: 'f,
         't: 'a + 'b;
 }
 
 pub trait Pure<'t, ReqIn: TypeGuard<'t>>: Hkt<'t> {
-    fn pure<'a, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, a: A) -> Self::F<'a, A>
+    fn pure<'a, A>(
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        a: A,
+    ) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a;
 }
 
 /// `A` and `F1` usually needs cloning.
-pub trait Applicative<
-    't,
-    ReqIn: TypeGuard<'t>,
-    ReqOut: TypeGuard<'t>,
-    ReqF1: OneOf5Hkt<'t>,
->: Functor<'t, ReqIn, ReqOut, ReqF1> + Pure<'t, ReqIn>
+pub trait Applicative<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>:
+    Functor<'t, ReqIn, ReqOut, ReqF1> + Pure<'t, ReqIn>
 {
     fn apply<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
@@ -555,12 +545,8 @@ pub trait Applicative<
 }
 
 /// `B` and `F1` usually needs cloning.
-pub trait Monad<
-    't,
-    ReqIn: TypeGuard<'t>,
-    ReqOut: TypeGuard<'t>,
-    ReqF1: OneOf5Hkt<'t>,
->: Applicative<'t, ReqIn, ReqOut, ReqF1>
+pub trait Monad<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>:
+    Applicative<'t, ReqIn, ReqOut, ReqF1>
 {
     fn bind<'a, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
@@ -589,19 +575,18 @@ pub(crate) trait MonadT<
     ReqF1: OneOf5Hkt<'t>,
 >: Monad<'t, ReqIn, ReqOut, ReqF1>
 {
-    fn lift<'a, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, ma: M::F<'a, A>) -> Self::F<'a, A>
+    fn lift<'a, A>(
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        ma: M::F<'a, A>,
+    ) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a;
 }
 
 /// `B`, `F1` and `F` usually needs cloning.
-pub trait Traversable<
-    't,
-    ReqIn: TypeGuard<'t>,
-    ReqOut: TypeGuard<'t>,
-    ReqF1: OneOf5Hkt<'t>,
->: Functor<'t, ReqIn, ReqOut, ReqF1> + Foldable<'t, ReqIn, ReqOut, ReqF1>
+pub trait Traversable<'t, ReqIn: TypeGuard<'t>, ReqOut: TypeGuard<'t>, ReqF1: OneOf5Hkt<'t>>:
+    Functor<'t, ReqIn, ReqOut, ReqF1> + Foldable<'t, ReqIn, ReqOut, ReqF1>
 {
     fn traverse<'a, A, B, F, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
@@ -621,10 +606,13 @@ pub trait Traversable<
         't: 'a;
 }
 
-/// TODO
-#[allow(unused)]
-pub(crate) trait SemigroupK<'t>: Hkt<'t> {
-    fn combine<'a, A: 'a>(a: Self::F<'a, A>, b: Self::F<'a, A>) -> Self::F<'a, A>
+#[cfg(false)]
+pub(crate) trait SemigroupK<'t, Req: TypeGuard<'t>>: Hkt<'t> {
+    fn combine<'a, A: 'a>(
+        a: Self::F<'a, A>,
+        b: Self::F<'a, A>,
+        clone_a: impl 'a + Fn(&A) -> Req::Output<'a, A> + Clone
+    ) -> Self::F<'a, A>
     where
         't: 'a;
 }
@@ -648,10 +636,12 @@ pub(crate) trait DefaultK<'t>: Hkt<'t> {
 }
 
 #[allow(unused)]
+#[cfg(false)]
 /// TODO
 pub(crate) trait MonoidK<'t>: SemigroupK<'t> + DefaultK<'t> {}
 
-// impl<'t, K: SemigroupK + DefaultK> MonoidK for K {}
+#[cfg(false)]
+impl<'t, K: SemigroupK + DefaultK> MonoidK for K {}
 
 // pub trait DependentDuplicateK: Hkt {
 //     fn duplicate<'a, A: 'a + Clone>(a: Self::F<'a, A>) -> Cycle<impl Iterator<Item = Self::F<'a, A>>> {
@@ -684,9 +674,17 @@ pub(crate) trait MonoidK<'t>: SemigroupK<'t> + DefaultK<'t> {}
 /// Convert reference into ownership with the same lifetime bound:
 /// - The bound could be from a reference to some shared resource
 /// - Other owned data could be cloned, including A
-pub trait CloneK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output: TypeGuard<'t> = ConstBool<true>>: Hkt<'t> {
+pub trait CloneK<
+    't,
+    ReqIn: TypeGuard<'t> = ConstBool<false>,
+    Output: TypeGuard<'t> = ConstBool<true>,
+>: Hkt<'t>
+{
     /// = (&Self::F<'a, A>) => Self::F<'a, A> (Clone) + (Self::F<'a, A>) => Self::F<'t, A> (IntoOwned) + (Self::F<'t, A>) => Self::F<'a, A> (Covariance)
-    fn clone<'a, A>(clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
+    fn clone<'a, A>(
+        clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'a, A> + Clone,
+        a: &Self::F<'a, A>,
+    ) -> Self::F<'a, A>
     where
         A: 'a,
         't: 'a;
@@ -694,9 +692,7 @@ pub trait CloneK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output: TypeGuard<
 
 // TODO
 #[cfg(false)]
-impl<'t, ReqIn: TypeGuard<'t>, T: Hkt<'t>> CloneK<'t, ReqIn, ConstBool<false>> for T {
-
-}
+impl<'t, ReqIn: TypeGuard<'t>, T: Hkt<'t>> CloneK<'t, ReqIn, ConstBool<false>> for T {}
 
 /// Relic
 // pub trait CloneApplicativeFn<'t, ReqF1: OneOf5Hkt<'t> + TCloneableOf5<'t>>: Hkt<'t> {
@@ -716,7 +712,12 @@ impl<'t, ReqIn: TypeGuard<'t>, T: Hkt<'t>> CloneK<'t, ReqIn, ConstBool<false>> f
 
 #[cfg(feature = "unstable")]
 /// Similar to [CloneK] but can be set to arbitrary new lifetime
-pub trait CloneOwnedK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output: TypeGuard<'t> = ConstBool<true>>: Hkt<'t> {
+pub trait CloneOwnedK<
+    't,
+    ReqIn: TypeGuard<'t> = ConstBool<false>,
+    Output: TypeGuard<'t> = ConstBool<true>,
+>: Hkt<'t>
+{
     fn clone_owned<'a, 'b, A>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'b, A> + Clone,
         a: &Self::F<'a, A>,
@@ -729,7 +730,12 @@ pub trait CloneOwnedK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output: TypeG
 #[allow(unused)]
 #[cfg(not(feature = "unstable"))]
 /// Similar to [CloneK] but can be set to arbitrary new lifetime
-pub(crate) trait CloneOwnedK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output: TypeGuard<'t> = ConstBool<true>>: Hkt<'t> {
+pub(crate) trait CloneOwnedK<
+    't,
+    ReqIn: TypeGuard<'t> = ConstBool<false>,
+    Output: TypeGuard<'t> = ConstBool<true>,
+>: Hkt<'t>
+{
     fn clone_owned<'a, 'b, A>(
         clone_a: impl 'a + Fn(&A) -> ReqIn::Output<'b, A> + Clone,
         a: &Self::F<'a, A>,
@@ -741,13 +747,10 @@ pub(crate) trait CloneOwnedK<'t, ReqIn: TypeGuard<'t> = ConstBool<false>, Output
 
 // TODO
 #[cfg(false)]
-impl<'t, ReqIn: TypeGuard<'t>, T: Hkt<'t>> CloneOwnedK<'t, ReqIn, ConstBool<false>> for T {
-
-}
-
+impl<'t, ReqIn: TypeGuard<'t>, T: Hkt<'t>> CloneOwnedK<'t, ReqIn, ConstBool<false>> for T {}
 
 /// A trait alias to declare a better intention that the variant must be cloneable - along with a helper function.
-pub trait TCloneableOf5<'t>: NotT1of5<'t> + NotT2of5<'t> + NotT3of5<'t> {
+pub trait TCloneableOf5<'t>: NotT1Of5<'t> + NotT2Of5<'t> + NotT3Of5<'t> {
     /// Helper function to eliminate uncloneable variants.
     fn arbitrary_uncloneable<'a, T1a, T2a, T3a, T4a, T5a, Tb>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -768,12 +771,13 @@ pub trait TCloneableOf5<'t>: NotT1of5<'t> + NotT2of5<'t> + NotT3of5<'t> {
     }
 }
 
-impl<'t, T: NotT1of5<'t> + NotT2of5<'t> + NotT3of5<'t>> TCloneableOf5<'t> for T {}
-
+impl<'t, T: NotT1Of5<'t> + NotT2Of5<'t> + NotT3Of5<'t>> TCloneableOf5<'t> for T {}
 
 #[deprecated = "Unused"]
 #[allow(unused)]
-pub(crate) trait PureMapInner<'t, ReqIn: Hkt<'t> = NullaryHkt, F: Hkt<'t> = IdHkt>: Hkt<'t> {
+pub(crate) trait PureMapInner<'t, ReqIn: Hkt<'t> = NullaryHkt, F: Hkt<'t> = IdHkt>:
+    Hkt<'t>
+{
     fn pure_map_inner<'a, A>(
         in_requirement: ReqIn::F<'a, A>,
         s: Self::F<'a, A>,
@@ -783,7 +787,7 @@ pub(crate) trait PureMapInner<'t, ReqIn: Hkt<'t> = NullaryHkt, F: Hkt<'t> = IdHk
         't: 'a;
 }
 
-pub trait CovariantK<'t>: Hkt<'t> {
+pub(crate) trait CovariantK<'t>: Hkt<'t> {
     /// &'a TInner<'a, A> => &'b TInner<'b, A>/
     /// A stack can have as many lifetimes as layers
     /// Safe but only works on owned types
@@ -802,6 +806,18 @@ pub(crate) trait CovariantRefK<'t>: CovariantK<'t> {
         'a: 'b,
         't: 'r + 'a + 'b;
 }
+
+#[cfg(false)]
+/// # Safety
+/// Only implement this for types that are both covariant in itself and the inner type. See https://doc.rust-lang.org/reference/subtyping.html#variance.
+pub unsafe trait CovariantTransmute<'t>: Hkt<'t> {
+    fn covariant_transmute<'a, 'f, 'b, A, F: CovariantTransmute<'t>>(s: 
+        F::F<'f, Self::F<'a, A>>) -> F::F<'f, Self::F<'b, A>>
+    where
+        A: 'a,
+        'a: 'b,
+        't: 'a; 
+} 
 
 #[deprecated = "Unused"]
 #[allow(unused)]
@@ -827,10 +843,14 @@ impl HktClassification for ClonePtrHkt {
 }
 
 impl<'t, ReqIn: TypeGuard<'t>> CloneK<'t, ReqIn> for ClonePtrHkt {
-    fn clone<'a, A>(_clone_a: impl Fn(&A) -> <ReqIn>::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
+    fn clone<'a, A>(
+        _clone_a: impl Fn(&A) -> <ReqIn>::Output<'a, A> + Clone,
+        a: &Self::F<'a, A>,
+    ) -> Self::F<'a, A>
     where
         A: 'a,
-        't: 'a {
+        't: 'a,
+    {
         *a
     }
 }
@@ -862,10 +882,14 @@ impl HktClassification for DynCloneFnHkt {
 }
 
 impl<'t, ReqIn: TypeGuard<'t>> CloneK<'t, ReqIn> for DynCloneFnHkt {
-    fn clone<'a, A>(_clone_a: impl Fn(&A) -> <ReqIn>::Output<'a, A> + Clone, a: &Self::F<'a, A>) -> Self::F<'a, A>
+    fn clone<'a, A>(
+        _clone_a: impl Fn(&A) -> <ReqIn>::Output<'a, A> + Clone,
+        a: &Self::F<'a, A>,
+    ) -> Self::F<'a, A>
     where
         A: 'a,
-        't: 'a {
+        't: 'a,
+    {
         Arc::clone(a)
     }
 }

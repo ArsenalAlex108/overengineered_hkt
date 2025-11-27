@@ -8,12 +8,8 @@ use tap::Pipe;
 
 use crate::{
     hkt::{
-        Applicative, CloneK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, IntoConverged,
-        Monad, Pure, TCloneableOf5, Traversable, UnsizedHkt,
-        UnsizedHktUnsized, boxed::BoxT, id::IdHkt, one_of::NotT5of5,
-    },
-    marker_classification::{AssertBlankOutput, ConstBool, TypeGuard},
-    utils::CloneWrapper,
+        Applicative, CloneK, Converge, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, Monad, Pure, TCloneableOf5, Traversable, UnsizedHkt, UnsizedHktUnsized, boxed::BoxT, id::IdHkt, one_of::NotT5Of5
+    }, marker_classification::{AssertBlankOutput, ConstBool, TypeGuard}, transmute::unsafe_transmute_id, utils::CloneWrapper
 };
 
 use super::one_of::OneOf5Hkt;
@@ -251,7 +247,7 @@ impl<
     't,
     ReqIn: TypeGuard<'t>,
     // TODO: Consider if cloning funcs should be [Copy]
-    ReqF1: TCloneableOf5<'t> + NotT5of5<'t>,
+    ReqF1: TCloneableOf5<'t> + NotT5Of5<'t>,
     TInner: Monad<'t, ReqIn, ReqIn, ReqF1>
         + Foldable<'t, ReqIn, ReqIn, ReqF1>
         // Unused bound from Applicative impl
@@ -346,6 +342,7 @@ impl<
                                             TInner::clone(value.clone(), b)
                                         });
 
+                                        // TODO: Use SemigroupK instead
                                         TInner::bind(
                                             clone_b.clone(),
                                             clone_b.clone(),
@@ -386,7 +383,7 @@ impl<
                 Vec::with_capacity(TInner::size_hint(&nested).0.saturating_add(1)),
                 nested,
             )
-            .into_converged()
+            .converge()
             // Don't flatten - flat_map reduce instead
             // sum.into_iter().flat_map({
             //     let f_clone2 = f_clone.clone();
@@ -422,7 +419,7 @@ impl<
     't,
     ReqIn: TypeGuard<'t>,
     ReqOut: TypeGuard<'t>,
-    ReqF1: TCloneableOf5<'t> + NotT5of5<'t>,
+    ReqF1: TCloneableOf5<'t> + NotT5Of5<'t>,
     TInner: Traversable<'t, ReqIn, ReqOut, ReqF1> + CloneK<'t, ReqOut>,
 > Traversable<'t, ReqIn, ReqOut, ReqF1> for BoxT<DynIteratorT<TInner>>
 {

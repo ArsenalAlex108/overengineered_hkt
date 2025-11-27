@@ -83,8 +83,10 @@ This library was inspired by the `C#` library [`language-ext`](https://github.co
 
 ## TODO
 
+- Implement/Fix Bind\<Traversable\> for Iter & Future - and see if ReqIn and ReqOut can be different types for previous impls
+- Implement optional Clone => 3 clone options: DependentClone, IndependentClone and NoClone => INSTEAD: independent cloning only make sense for nullary and is otherwise not useful.
 - Implement DerefK and hkt traits for Arc
-- Implement optional Clone
+- Optimize FoldWhile and Rfoldwhile including (fold refs and muts) using as_mut()
 - Better ergonomics: Add type-inferred methods and single-layer wrapper types (since raw hkt objects don't encode type information)
 - Add no-alloc support
 - Documentation

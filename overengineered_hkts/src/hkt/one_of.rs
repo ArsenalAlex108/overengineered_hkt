@@ -99,7 +99,7 @@ pub trait OneOf5Hkt<'t> {
         't: 'a;
 }
 #[doc = " Indicates that the Hkt does not contains an instannce of `T1`"]
-pub trait NotT1of5<'t>: OneOf5Hkt<'t> {
+pub trait NotT1Of5<'t>: OneOf5Hkt<'t> {
     #[doc = " Set `T1` to an arbitrary type parameter `T1b`."]
     fn arbitrary_t1<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T1b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -109,7 +109,7 @@ pub trait NotT1of5<'t>: OneOf5Hkt<'t> {
         't: 'a;
 }
 #[doc = " Indicates that the Hkt does not contains an instannce of `T2`"]
-pub trait NotT2of5<'t>: OneOf5Hkt<'t> {
+pub trait NotT2Of5<'t>: OneOf5Hkt<'t> {
     #[doc = " Set `T2` to an arbitrary type parameter `T2b`."]
     fn arbitrary_t2<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T2b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -119,7 +119,7 @@ pub trait NotT2of5<'t>: OneOf5Hkt<'t> {
         't: 'a;
 }
 #[doc = " Indicates that the Hkt does not contains an instannce of `T3`"]
-pub trait NotT3of5<'t>: OneOf5Hkt<'t> {
+pub trait NotT3Of5<'t>: OneOf5Hkt<'t> {
     #[doc = " Set `T3` to an arbitrary type parameter `T3b`."]
     fn arbitrary_t3<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T3b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -129,7 +129,7 @@ pub trait NotT3of5<'t>: OneOf5Hkt<'t> {
         't: 'a;
 }
 #[doc = " Indicates that the Hkt does not contains an instannce of `T4`"]
-pub trait NotT4of5<'t>: OneOf5Hkt<'t> {
+pub trait NotT4Of5<'t>: OneOf5Hkt<'t> {
     #[doc = " Set `T4` to an arbitrary type parameter `T4b`."]
     fn arbitrary_t4<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T4b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -139,7 +139,7 @@ pub trait NotT4of5<'t>: OneOf5Hkt<'t> {
         't: 'a;
 }
 #[doc = " Indicates that the Hkt does not contains an instannce of `T5`"]
-pub trait NotT5of5<'t>: OneOf5Hkt<'t> {
+pub trait NotT5Of5<'t>: OneOf5Hkt<'t> {
     #[doc = " Set `T5` to an arbitrary type parameter `T5b`."]
     fn arbitrary_t5<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T5b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -249,7 +249,7 @@ impl<'t> OneOf5Hkt<'t> for T1Of5Hkt {
         old.clone()
     }
 }
-impl<'t> NotT2of5<'t> for T1Of5Hkt {
+impl<'t> NotT2Of5<'t> for T1Of5Hkt {
     #[doc = " Set `T1` to an arbitrary type parameter `T1b`."]
     fn arbitrary_t2<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T2b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -261,7 +261,7 @@ impl<'t> NotT2of5<'t> for T1Of5Hkt {
         s
     }
 }
-impl<'t> NotT3of5<'t> for T1Of5Hkt {
+impl<'t> NotT3Of5<'t> for T1Of5Hkt {
     #[doc = " Set `T1` to an arbitrary type parameter `T1b`."]
     fn arbitrary_t3<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T3b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -273,7 +273,7 @@ impl<'t> NotT3of5<'t> for T1Of5Hkt {
         s
     }
 }
-impl<'t> NotT4of5<'t> for T1Of5Hkt {
+impl<'t> NotT4Of5<'t> for T1Of5Hkt {
     #[doc = " Set `T1` to an arbitrary type parameter `T1b`."]
     fn arbitrary_t4<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T4b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -285,7 +285,7 @@ impl<'t> NotT4of5<'t> for T1Of5Hkt {
         s
     }
 }
-impl<'t> NotT5of5<'t> for T1Of5Hkt {
+impl<'t> NotT5Of5<'t> for T1Of5Hkt {
     #[doc = " Set `T1` to an arbitrary type parameter `T1b`."]
     fn arbitrary_t5<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T5b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -398,7 +398,7 @@ impl<'t> OneOf5Hkt<'t> for T2Of5Hkt {
         old.clone()
     }
 }
-impl<'t> NotT1of5<'t> for T2Of5Hkt {
+impl<'t> NotT1Of5<'t> for T2Of5Hkt {
     #[doc = " Set `T2` to an arbitrary type parameter `T2b`."]
     fn arbitrary_t1<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T1b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -410,7 +410,7 @@ impl<'t> NotT1of5<'t> for T2Of5Hkt {
         s
     }
 }
-impl<'t> NotT3of5<'t> for T2Of5Hkt {
+impl<'t> NotT3Of5<'t> for T2Of5Hkt {
     #[doc = " Set `T2` to an arbitrary type parameter `T2b`."]
     fn arbitrary_t3<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T3b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -422,7 +422,7 @@ impl<'t> NotT3of5<'t> for T2Of5Hkt {
         s
     }
 }
-impl<'t> NotT4of5<'t> for T2Of5Hkt {
+impl<'t> NotT4Of5<'t> for T2Of5Hkt {
     #[doc = " Set `T2` to an arbitrary type parameter `T2b`."]
     fn arbitrary_t4<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T4b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -434,7 +434,7 @@ impl<'t> NotT4of5<'t> for T2Of5Hkt {
         s
     }
 }
-impl<'t> NotT5of5<'t> for T2Of5Hkt {
+impl<'t> NotT5Of5<'t> for T2Of5Hkt {
     #[doc = " Set `T2` to an arbitrary type parameter `T2b`."]
     fn arbitrary_t5<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T5b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -547,7 +547,7 @@ impl<'t> OneOf5Hkt<'t> for T3Of5Hkt {
         old.clone()
     }
 }
-impl<'t> NotT1of5<'t> for T3Of5Hkt {
+impl<'t> NotT1Of5<'t> for T3Of5Hkt {
     #[doc = " Set `T3` to an arbitrary type parameter `T3b`."]
     fn arbitrary_t1<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T1b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -559,7 +559,7 @@ impl<'t> NotT1of5<'t> for T3Of5Hkt {
         s
     }
 }
-impl<'t> NotT2of5<'t> for T3Of5Hkt {
+impl<'t> NotT2Of5<'t> for T3Of5Hkt {
     #[doc = " Set `T3` to an arbitrary type parameter `T3b`."]
     fn arbitrary_t2<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T2b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -571,7 +571,7 @@ impl<'t> NotT2of5<'t> for T3Of5Hkt {
         s
     }
 }
-impl<'t> NotT4of5<'t> for T3Of5Hkt {
+impl<'t> NotT4Of5<'t> for T3Of5Hkt {
     #[doc = " Set `T3` to an arbitrary type parameter `T3b`."]
     fn arbitrary_t4<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T4b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -583,7 +583,7 @@ impl<'t> NotT4of5<'t> for T3Of5Hkt {
         s
     }
 }
-impl<'t> NotT5of5<'t> for T3Of5Hkt {
+impl<'t> NotT5Of5<'t> for T3Of5Hkt {
     #[doc = " Set `T3` to an arbitrary type parameter `T3b`."]
     fn arbitrary_t5<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T5b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -696,7 +696,7 @@ impl<'t> OneOf5Hkt<'t> for T4Of5Hkt {
         old.clone()
     }
 }
-impl<'t> NotT1of5<'t> for T4Of5Hkt {
+impl<'t> NotT1Of5<'t> for T4Of5Hkt {
     #[doc = " Set `T4` to an arbitrary type parameter `T4b`."]
     fn arbitrary_t1<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T1b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -708,7 +708,7 @@ impl<'t> NotT1of5<'t> for T4Of5Hkt {
         s
     }
 }
-impl<'t> NotT2of5<'t> for T4Of5Hkt {
+impl<'t> NotT2Of5<'t> for T4Of5Hkt {
     #[doc = " Set `T4` to an arbitrary type parameter `T4b`."]
     fn arbitrary_t2<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T2b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -720,7 +720,7 @@ impl<'t> NotT2of5<'t> for T4Of5Hkt {
         s
     }
 }
-impl<'t> NotT3of5<'t> for T4Of5Hkt {
+impl<'t> NotT3Of5<'t> for T4Of5Hkt {
     #[doc = " Set `T4` to an arbitrary type parameter `T4b`."]
     fn arbitrary_t3<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T3b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -732,7 +732,7 @@ impl<'t> NotT3of5<'t> for T4Of5Hkt {
         s
     }
 }
-impl<'t> NotT5of5<'t> for T4Of5Hkt {
+impl<'t> NotT5Of5<'t> for T4Of5Hkt {
     #[doc = " Set `T4` to an arbitrary type parameter `T4b`."]
     fn arbitrary_t5<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T5b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -845,7 +845,7 @@ impl<'t> OneOf5Hkt<'t> for T5Of5Hkt {
         old.clone()
     }
 }
-impl<'t> NotT1of5<'t> for T5Of5Hkt {
+impl<'t> NotT1Of5<'t> for T5Of5Hkt {
     #[doc = " Set `T5` to an arbitrary type parameter `T5b`."]
     fn arbitrary_t1<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T1b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -857,7 +857,7 @@ impl<'t> NotT1of5<'t> for T5Of5Hkt {
         s
     }
 }
-impl<'t> NotT2of5<'t> for T5Of5Hkt {
+impl<'t> NotT2Of5<'t> for T5Of5Hkt {
     #[doc = " Set `T5` to an arbitrary type parameter `T5b`."]
     fn arbitrary_t2<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T2b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -869,7 +869,7 @@ impl<'t> NotT2of5<'t> for T5Of5Hkt {
         s
     }
 }
-impl<'t> NotT3of5<'t> for T5Of5Hkt {
+impl<'t> NotT3Of5<'t> for T5Of5Hkt {
     #[doc = " Set `T5` to an arbitrary type parameter `T5b`."]
     fn arbitrary_t3<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T3b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,
@@ -881,7 +881,7 @@ impl<'t> NotT3of5<'t> for T5Of5Hkt {
         s
     }
 }
-impl<'t> NotT4of5<'t> for T5Of5Hkt {
+impl<'t> NotT4Of5<'t> for T5Of5Hkt {
     #[doc = " Set `T5` to an arbitrary type parameter `T5b`."]
     fn arbitrary_t4<'a, T1a: 'a, T2a: 'a, T3a: 'a, T4a: 'a, T5a: 'a, T4b: 'a>(
         s: Self::OneOf5F<'a, T1a, T2a, T3a, T4a, T5a>,

@@ -15,6 +15,11 @@ transmute = []
 no-std = []
 laws = []
 
+[profile.dev]
+# Set to "line-tables-only" if compilation fails due to fatal error LNK1318: Unexpected PDB error; LIMIT (12) ''␍
+debug = "none"
+strip = "symbols"
+
 [lints.clippy]
 
 [badges]
@@ -30,8 +35,6 @@ either = "1.15.0"
 futures = "0.3.31"
 intertrait = "0.2.2"
 naan = "0.1.32"
-negative = "0.1.2"
-negative-impl = "0.1.6"
 ref-cast = "1.0.25"
 static_assertions = "1.1.0"
 tap = "1.0.1"

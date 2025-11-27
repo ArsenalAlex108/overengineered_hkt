@@ -34,10 +34,10 @@ where
 }
 
 /// Like [unsafe_transmute] but also checks the [TypeId](std::any::TypeId) of `T` and `U` for equality as if they were bound by `'static` using [typeid::of].
-/// Use this to unsafely assert at compile time that `T` and `U` are exactly the same type - including lifetimes.
+/// Use this to unsafely assert at compile time that `T` and `U` are exactly the same type - including lifetimes - unless the correct lifetime variance was used: https://doc.rust-lang.org/reference/subtyping.html#variance.
 /// 
 /// # Safety
-/// This function is `unsafe` because undefined behavior related to lifetimes can still occur since `T` and `U` are not bounded by `'static`. If the [TypeId](std::any::TypeId) check were sufficient, any undefined behavior would have been stopped at runtime by a [panic](assert_eq). This function is only guaranteed to be safe if `T` and `U` are exactly the same type - of course including lifetimes.
+/// This function is `unsafe` because undefined behavior related to lifetimes can still occur since `T` and `U` are not bounded by `'static`. If the [TypeId](std::any::TypeId) check were sufficient, any undefined behavior would have been stopped at runtime by a [panic](assert_eq). This function is only guaranteed to be safe if `T` and `U` are exactly the same type - of course including lifetimes - unless the correct lifetime variance was used: https://doc.rust-lang.org/reference/subtyping.html#variance.
 #[inline]
 #[allow(unused)]
 pub(crate) unsafe fn unsafe_transmute_id<T, U>(s: U) -> T

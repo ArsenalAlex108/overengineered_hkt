@@ -80,6 +80,8 @@ impl<
     }
 }
 
+// TODO add fold for ref and refmut here
+
 impl<
     't,
     ReqIn: TypeGuard<'t>,

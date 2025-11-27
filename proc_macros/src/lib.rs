@@ -168,7 +168,7 @@ pub fn generate_one_of(count: TokenStream) -> TokenStream {
         format!(
             "
             /// Indicates that the Hkt does not contains an instannce of `T{i}`
-            pub trait NotT{i}of{count}<'t>: OneOf{count}Hkt<'t> {{
+            pub trait NotT{i}Of{count}<'t>: OneOf{count}Hkt<'t> {{
                 /// Set `T{i}` to an arbitrary type parameter `T{i}b`.
                 fn arbitrary_t{i}<'a, {type_params_bounded_a} T{i}b: 'a>(
                     s: Self::OneOf{count}F<'a, {type_params_a}>,
@@ -271,7 +271,7 @@ pub fn generate_one_of(count: TokenStream) -> TokenStream {
 
             buffer.push_str(&format!(
                 "
-                    impl<'t> NotT{j}of{count}<'t> for T{i}Of{count}Hkt {{
+                    impl<'t> NotT{j}Of{count}<'t> for T{i}Of{count}Hkt {{
                         /// Set `T{i}` to an arbitrary type parameter `T{i}b`.
                         fn arbitrary_t{j}<'a, {type_params_bounded_a} T{j}b: 'a>(
                             s: Self::OneOf{count}F<'a, {type_params_a}>,

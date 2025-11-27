@@ -4,7 +4,7 @@ use tap::Pipe as _;
 
 use crate::{
     hkt::{
-        CloneK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, Rfoldable, TCloneableOf5, UnsizedHkt, UnsizedHktUnsized, one_of::{NotT5of5, OneOf5Hkt, T5Of5Hkt}
+        CloneK, CovariantK, FoldWhile, Foldable, Functor, Hkt, HktUnsized, Rfoldable, TCloneableOf5, UnsizedHkt, UnsizedHktUnsized, one_of::{NotT5Of5, OneOf5Hkt, T5Of5Hkt}
     },
     marker_classification::{AssertBlankOutput, ConstBool, TypeGuard},
     utils::CloneWrapper,
@@ -79,7 +79,7 @@ impl<
     't,
     ReqIn: TypeGuard<'t>,
     ReqOut: TypeGuard<'t>,
-    ReqF1: TCloneableOf5<'t> + NotT5of5<'t>,
+    ReqF1: TCloneableOf5<'t> + NotT5Of5<'t>,
     TOuter: Functor<'t, ReqIn, ReqOut, ReqF1>,
     TInner: Functor<'t, ReqIn, ReqOut, ReqF1> + CloneK<'t, ReqIn> + CloneK<'t, ReqOut>,
 > Functor<'t, ReqIn, ReqOut, ReqF1> for BindT<TOuter, TInner>
@@ -239,31 +239,32 @@ impl<'t, ReqIn: TypeGuard<'t>, TOuter: CloneK<'t, ReqIn>, TInner: CloneK<'t, Req
 impl<
     't,
     ReqOut: TypeGuard<'t>,
-    ReqF1: OneOf5Hkt<'t> + TCloneableOf5<'t> + NotT5of5<'t>,
-    TOuter: Foldable<'t, ConstBool<false>, ReqOut, ReqF1>,
-    TInner: Foldable<'t, ConstBool<false>, ReqOut, ReqF1>,
-> Foldable<'t, ConstBool<false>, ReqOut, ReqF1> for BindT<TOuter, TInner>
+    ReqF1: OneOf5Hkt<'t> + TCloneableOf5<'t> + NotT5Of5<'t>,
+    InHkt: Hkt<'t>,
+    TOuter: Foldable<'t, ConstBool<false>, ReqOut, ReqF1, InHkt>,
+    TInner: Foldable<'t, ConstBool<false>, ReqOut, ReqF1, InHkt>,
+> Foldable<'t, ConstBool<false>, ReqOut, ReqF1, InHkt> for BindT<TOuter, TInner>
 {
     fn fold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         _: impl 'f + Fn(&A) -> AssertBlankOutput + Clone,
         clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
-        fb: Self::F<'a, A>,
+        fa: InHkt::F<'a, Self::F<'a, A>>,
     ) -> FoldWhile<B>
     where
         A: 'a,
         B: 'b,
-        F1Once: 'f + FnOnce(B, A) -> FoldWhile<B>,
-        F1Mut: 'f + FnMut(B, A) -> FoldWhile<B>,
-        F1Fn: 'f + Fn(B, A) -> FoldWhile<B>,
-        F1Clone: 'f + Fn(B, A) -> FoldWhile<B> + Clone,
-        F1Copy: 'f + Fn(B, A) -> FoldWhile<B> + Copy,
+        F1Once: 'f + FnOnce(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Mut: 'f + FnMut(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Fn: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Clone: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B> + Clone,
+        F1Copy: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B> + Copy,
         'a: 'f,
         'b: 'f,
         't: 'a + 'b,
     {
-        let f = ReqF1::arbitrary_uncloneable(f, PhantomData::<fn(B, A) -> FoldWhile<B>>);
+        let f = ReqF1::arbitrary_uncloneable(f, PhantomData::<fn(B, InHkt::F<'a, A>) -> FoldWhile<B>>);
 
         TOuter::fold_while(
             |_| AssertBlankOutput,
@@ -276,9 +277,9 @@ impl<
                 b,
                 ka,
             ))
-            .pipe(|f| ReqF1::arbitrary_t5(f, PhantomData::<fn(B, TInner::F<'a, A>) -> FoldWhile<B>>)),
+            .pipe(|f| ReqF1::arbitrary_t5(f, PhantomData::<fn(B, InHkt::F<'a, TInner::F<'a, A>>) -> FoldWhile<B>>)),
             init,
-            fb
+            fa
         )
     }
 }
@@ -287,31 +288,32 @@ impl<
 impl<
     't,
     ReqOut: TypeGuard<'t>,
-    ReqF1: OneOf5Hkt<'t> + TCloneableOf5<'t> + NotT5of5<'t>,
-    TOuter: Rfoldable<'t, ConstBool<false>, ReqOut, ReqF1>,
-    TInner: Rfoldable<'t, ConstBool<false>, ReqOut, ReqF1>,
-> Rfoldable<'t, ConstBool<false>, ReqOut, ReqF1> for BindT<TOuter, TInner>
+    ReqF1: OneOf5Hkt<'t> + TCloneableOf5<'t> + NotT5Of5<'t>,
+    InHkt: Hkt<'t>,
+    TOuter: Rfoldable<'t, ConstBool<false>, ReqOut, ReqF1, InHkt>,
+    TInner: Rfoldable<'t, ConstBool<false>, ReqOut, ReqF1, InHkt>,
+> Rfoldable<'t, ConstBool<false>, ReqOut, ReqF1, InHkt> for BindT<TOuter, TInner>
 {
     fn rfold_while<'a, 'b, 'f, A, B, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>(
         _: impl 'f + Fn(&A) -> AssertBlankOutput + Clone,
         clone_b: impl 'f + Fn(&B) -> ReqOut::Output<'b, B> + Clone,
         f: ReqF1::OneOf5F<'f, F1Once, F1Mut, F1Fn, F1Clone, F1Copy>,
         init: B,
-        fb: Self::F<'a, A>,
+        fa: InHkt::F<'a, Self::F<'a, A>>,
     ) -> FoldWhile<B>
     where
         A: 'a,
         B: 'b,
-        F1Once: 'f + FnOnce(B, A) -> FoldWhile<B>,
-        F1Mut: 'f + FnMut(B, A) -> FoldWhile<B>,
-        F1Fn: 'f + Fn(B, A) -> FoldWhile<B>,
-        F1Clone: 'f + Fn(B, A) -> FoldWhile<B> + Clone,
-        F1Copy: 'f + Fn(B, A) -> FoldWhile<B> + Copy,
+        F1Once: 'f + FnOnce(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Mut: 'f + FnMut(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Fn: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B>,
+        F1Clone: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B> + Clone,
+        F1Copy: 'f + Fn(B, InHkt::F<'a, A>) -> FoldWhile<B> + Copy,
         'a: 'f,
         'b: 'f,
         't: 'a + 'b,
     {
-        let f = ReqF1::arbitrary_uncloneable(f, PhantomData::<fn(B, A) -> FoldWhile<B>>);
+        let f = ReqF1::arbitrary_uncloneable(f, PhantomData::<fn(B, InHkt::F<'a, A>) -> FoldWhile<B>>);
 
         TOuter::rfold_while(
             |_| AssertBlankOutput,
@@ -324,9 +326,9 @@ impl<
                 b,
                 ka,
             ))
-            .pipe(|f| ReqF1::arbitrary_t5(f, PhantomData::<fn(B, TInner::F<'a, A>) -> FoldWhile<B>>)),
+            .pipe(|f| ReqF1::arbitrary_t5(f, PhantomData::<fn(B, InHkt::F<'a, TInner::F<'a, A>>) -> FoldWhile<B>>)),
             init,
-            fb
+            fa
         )
     }
 }
